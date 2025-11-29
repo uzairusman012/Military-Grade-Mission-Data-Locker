@@ -3,6 +3,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.primitives import hmac
 import os
 import json
 
@@ -46,14 +47,60 @@ def encrypt_file(file_path, key):
 
     encrypted_data = encryptor.update(original_data) + encryptor.finalize()
 
+    # generating HMAC for integrity
+
+    h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
+    h.update(iv + encrypted_data)
+    hmac_value = h.finalize()
+
     # saving IV and encrypted data together
 
     with open(f"storage/encrypted_{os.path.basename(file_path)}", "wb") as f:
-        f.write(iv + encrypted_data)
+        f.write(iv + encrypted_data + hmac_value)
     
-    print(f"File '{file_path}' encrypted successfully.")
+    print(f"File '{file_path}' encrypted successfully with HMAC seal!")
 
-# ===================== USER MANAGEMENT =====================
+# ===================== DECRYPTOR ======================
+
+def decrypt_file(encrypted_path, key):
+
+    # reading the encrypted file data
+    with open(encrypted_path, "rb") as f:
+        data = f.read()
+    
+    # extracting IV, encrypted data, and HMAC
+
+    iv = data[:16]
+    hmac_value = data[-32:]
+    encrypted_data = data[16:-32]
+
+    # verifying HMAC
+
+    h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
+    h.update(iv + encrypted_data)
+    h.verify(hmac_value)
+
+    # creating the AES cipher for decryption
+
+    cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+
+    # decrypting the data
+
+    decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+
+    # removing padding
+
+    decrypted_data = decrypted_data.rstrip(b' ')
+
+    # saving the decrypted data
+
+    with open(f"decrypted_{os.path.basename(encrypted_path)[10:]}", "wb") as f:
+        f.write(decrypted_data)
+    
+    print(f"File decrypted successfully: decrypted_mission_plan.txt")
+
+# ===================== USER REGISTRATION =====================
 
 # function for registering a new user
 
@@ -105,27 +152,67 @@ def login_user():
         print(f"No ID Card found for the user '{username}' !")
         return None
 
+# ===================== ROLE BASED ACCESS =====================
 
-# ===================== TEST MENU =====================
+PERMISSIONS = {
+    "Commander": {"encrypt" : True, "decrypt" : True, "delete" : True},
+    "Pilot": {"encrypt" : False, "decrypt" : True, "delete" : False},
+    "Analyst": {"decrypt" : False, "encrypt" : True, "delete" : False},
+    "Technician": {"encrypt" : False, "decrypt" : False, "delete" : False},
+}
+
+def check_permission(role, action):
+    
+    if PERMISSIONS.get(role, {}).get(action, False):
+        return True
+    
+    print(f"Access Denied! {role} cannot {action} files.")
+    return False
+
+# ===================== TESTING MENU =====================
+
+logged_in_user = None
 
 while True:
     print("\n================ Military Grade Mission Data Locker ================")
+
+    if logged_in_user:
+        print(f"Logged in: {logged_in_user['username']}({logged_in_user['role']})")
+    else:
+        print("Not logged in.")
+
     print("1. Register User")
     print("2. Login User")
-    print("3. Encrypt Mission File")
-    print("4. Exit")
+    print("3. Encrypt File")
+    print("4. Decrypt File")
+    print("5. Exit")
 
-    choice = input("Enter your choice (1-4): ")
+    choice = input("Enter your choice (1-6): ")
     
     if choice == '1':
         register_user()
     elif choice == '2':
         login_user()
     elif choice == '3':
-        key = derive_key("testing123")
-        encrypt_file("mission_plan.txt", key)
+
+        if not logged_in_user:
+            print("Must login first")
+        elif check_permission(logged_in_user['role'], 'encrypt'):
+            key = derive_key(input("Enter encryption password: "))
+            encrypt_file("mission_plan.txt", key)
     elif choice == '4':
-        print("Exiting...")
+
+        if not logged_in_user:
+            print("Must login first")
+        elif check_permission(logged_in_user['role'], 'decrypt'):
+            key = derive_key(input("Enter decryption password: "))
+            decrypt_file("storage/encrypted_mission_plan.txt", key)
+        
+    elif choice == '5':
+
+        logged_in_user = None
+        print("Logged out successfully!")
+    elif choice == '6':
         break
     else:
         print("Invalid choice. Please try again.")
