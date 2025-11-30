@@ -33,12 +33,12 @@ In high-stakes environments (e.g., military ops or emergency teams), data breach
 Organized repo like this:
 
 military-grade-mission-data-locker/
-
+'''
 ├── users/                # User data and roles (e.g., JSON files)
 ├── logs/                 # Audit logs
 ├── storage/              # Encrypted files
 ├── main.py               # Main application script
-
+'''
 
 ## Installation
 1. Clone the repo: `git clone https://github.com/yourusername/military-grade-mission-data-locker.git`
