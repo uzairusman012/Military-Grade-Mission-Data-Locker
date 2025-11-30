@@ -16,7 +16,7 @@ In high-stakes environments (e.g., military ops or emergency teams), data breach
 - Log all access attempts.
 
 ## Key Features
-- **User Registration & Roles**: Predefined roles like Commander (full access), Pilot/Operator (read-only), Analyst (decryption only), Technician (limited).
+- **User Registration & Roles**: Predefined roles like Commander (full access), Pilot (read-only), Analyst (decryption only), Technician (limited).
 - **Strong Password Hashing**: Uses Argon2 or PBKDF2-HMAC-SHA256; passwords are never stored plainly.
 - **AES-256 Encryption**: In CBC or GCM mode with random IV for confidentiality.
 - **HMAC-SHA256 Integrity Check**: Detects any file modifications; rejects decryption if failed.
@@ -24,34 +24,30 @@ In high-stakes environments (e.g., military ops or emergency teams), data breach
 - **Audit Logging**: Records username, timestamp, action, file, and success/failure.
 
 ## Technologies Used
-- Python 3.x
+- Python 3.12.10
 - `cryptography` library (for AES, HMAC, PBKDF2)
 - `argon2-cffi` (for password hashing)
-- Built-in modules: `os`, `json`, `hashlib`, `getpass`
-- Optional: Tkinter for GUI       #not for now
+- Built-in modules: `os`, `json`, `hashlib`, `getpass`   
 
 ## Folder Structure
 Organized repo like this:
-
+```
 military-grade-mission-data-locker/
-├── encryption/     # Encryption scripts and utils
-├── users/          # User data and roles (e.g., JSON files)
-├── logs/           # Audit logs
-├── storage/        # Encrypted files
-├── main.py         # Main application script
-├── requirements.txt 
 
+├── users/                # User data and roles (e.g., JSON files)
+├── logs/                 # Audit logs
+├── storage/              # Encrypted files
+├── main.py               # Main application script
+
+```
 
 ## Installation
 1. Clone the repo: `git clone https://github.com/yourusername/military-grade-mission-data-locker.git`
-2. Install dependencies: `pip install -r requirements.txt`
-   - requirements.txt content:
-     cryptography
-     argon2-cffi
+2. Install dependencies: `pip install cryptography argon2-cffi
 
 
 ## Usage
-1. Run `main.py` (or GUI if implemented).
+1. Run `main.py`.
 2. Register a user with a role and password.
 3. Encrypt/decrypt files based on your role.
 4. Check logs for activity.
