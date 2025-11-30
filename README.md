@@ -1,67 +1,139 @@
-# Military-Grade Mission Data Locker
+# 🎖️ Military-Grade Mission Data Locker
 
-A Python-based secure encryption system designed to protect sensitive mission data, simulating real-world military and cybersecurity practices. It uses AES-256 encryption, HMAC for integrity, role-based access control (RBAC), and audit logging.
+A Python-based secure information system designed to protect highly sensitive digital files using modern cryptographic methods, simulating defense-grade data protection systems.
 
-## Project Overview
-This tool safeguards critical files like flight plans, drone routes, and intelligence notes. It demonstrates modern cryptography in Python, ensuring data is confidential, tamper-proof, and accessible only to authorized users.
+## 🔐 **Project Overview**
 
-## Problem Statement
-In high-stakes environments (e.g., military ops or emergency teams), data breaches can cause severe risks. Common vulnerabilities include unauthorized access, tampering, weak passwords, and unencrypted storage. This project addresses these with encryption, integrity checks, and access controls.
+The **Military-Grade Mission Data Locker** is a complete security framework that demonstrates real-world cryptography implementation. It safeguards mission-critical data through multi-layered protection: military-strength encryption, tamper-proof integrity verification, role-based access control, and comprehensive audit trails.
 
-## Objectives
-- Encrypt files with AES-256.
-- Prevent tampering using HMAC.
-- Restrict access via user roles.
-- Store keys securely with password hashing (Argon2 or PBKDF2).
-- Log all access attempts.
+---
 
-## Key Features
-- **User Registration & Roles**: Predefined roles like Commander (full access), Pilot (read-only), Analyst (decryption only), Technician (limited).
-- **Strong Password Hashing**: Uses Argon2 or PBKDF2-HMAC-SHA256; passwords are never stored plainly.
-- **AES-256 Encryption**: In CBC or GCM mode with random IV for confidentiality.
-- **HMAC-SHA256 Integrity Check**: Detects any file modifications; rejects decryption if failed.
-- **Role-Based Access**: Verifies user auth, role, and action permissions before access.
-- **Audit Logging**: Records username, timestamp, action, file, and success/failure.
+## 🚀 **Key Features**
 
-## Technologies Used
-- Python 3.12.10
-- `cryptography` library (for AES, HMAC, PBKDF2)
-- `argon2-cffi` (for password hashing)
-- Built-in modules: `os`, `json`, `hashlib`, `getpass`   
+### **Core Security**
+- ✅ **AES-256 Encryption** with CBC mode
+- ✅ **HMAC-SHA256** integrity verification
+- ✅ **Argon2** password hashing
+- ✅ **PBKDF2** key derivation
 
-## Folder Structure
-Organized repo like this:
-```
-military-grade-mission-data-locker/
+### **Access Control**
+- **Commander**: Full access
+- **Pilot**: Read-only
+- **Analyst**: Decrypt only
+- **Technician**: Limited access
 
-├── users/                # User data and roles (e.g., JSON files)
-├── logs/                 # Audit logs
-├── storage/              # Encrypted files
-├── main.py               # Main application script
+---
+
+## 📂 **Project Structure**
 
 ```
 
-## Installation
-1. Clone the repo: `git clone https://github.com/yourusername/military-grade-mission-data-locker.git`
-2. Install dependencies: `pip install cryptography argon2-cffi
+Military Grade Mission Data Locker/
+│
+├── main.py                  # Main application
+├── mission_plan.txt         # Sample file (create for testing)
+├── users/                   # User profiles
+├── storage/                 # Encrypted files
+└── logs/                    # Audit logs
+
+```
+
+---
+
+## 🛠️ **Installation**
+
+1. **Install Python 3.8+**
+2. **Install dependencies:**
+   ```bash
+   pip install cryptography argon2-cffi
+
+---
+
+### **Create Test File**
+```
+
+echo "CLASSIFIED: Operation data" > mission_plan.txt
+
+```
+
+---
+
+## **How to Use**
+
+### **Run the Program**
+```
+python main.py
+```
+
+### **Register the User**
+
+Select 1,
+Enter name, password, role
+
+### **Login**
+
+Select 2,
+Enter credentials
+
+### **Encrypt File**
+
+Select 3,
+Enter encryption password
+
+### **Decrypt File**
+
+Select 4,
+Enter same password
+
+---
+
+## ✅ Verification Tests
+
+- [ ] Passwords stored as `$argon2id$` hashes in the `users/` directory  
+- [ ] Encrypted files in `storage/` appear as unreadable ciphertext  
+- [ ] `logs/audit.log` records all system actions  
+- [ ] Pilot role is restricted from encrypting files (Access Denied)  
+- [ ] Commander role has full system privileges  
+
+---
+
+## 🎓 Learning Outcomes
+
+This project demonstrates core concepts in:
+
+- Practical cryptographic implementation  
+- Secure software architecture  
+- Role-Based Access Control (RBAC)  
+- Audit log design and monitoring  
+- Professional Python development practices  
+
+---
+
+## 👥 Authors
+
+Developed as part of an Information Security course project.
+
+**Institution:**  
+
+Comsats University Islamabad, Sahiwal Campus  
+
+**Developers:**  
+- M. Uzair Usman  
+- Husnain Shahid  
+
+---
 
 
-## Usage
-1. Run `main.py`.
-2. Register a user with a role and password.
-3. Encrypt/decrypt files based on your role.
-4. Check logs for activity.
+## **📄 License**
 
-Example commands (in code):
-- Encrypt: Use AES-256 with HMAC.
-- Decrypt: Verify role, integrity, then decrypt.
+MIT License - Educational Use
 
-**Note for Beginners**: Test in a safe environment. This is educational— not for real classified data!
+---
 
-## Impact & Use Cases
-Teaches secure data handling, cryptography, key management, and access control. Adaptable for military sims, corporate vaults, research docs, or personal storage.
 
-## Contributing
-Fork the repo, make changes, and submit a pull request. Beginners welcome—focus on bug fixes or feature adds.
+
+
+
+
 
 
