@@ -1,16 +1,16 @@
-# 📖 User Manual: Military-Grade Mission Data Locker
+# **User Manual: Military-Grade Mission Data Locker**
 
 **Version 1.0** | **Last Updated**: 2025-11-30
 
 ---
 
-## 🎯 **Purpose of This Manual**
+## **Purpose of This Manual**
 
 This manual provides step-by-step instructions for operating the Mission Data Locker system. It is designed for users with minimal technical background, including military personnel, analysts, and security officers.
 
 ---
 
-## ⚠️ **Before You Begin**
+## **Before You Begin**
 
 **Required Setup:**
 1. Python 3.8+ installed
@@ -20,7 +20,7 @@ This manual provides step-by-step instructions for operating the Mission Data Lo
 
 ---
 
-## 🎮 **System Overview**
+## **System Overview**
 
 The system operates through a **menu-driven interface** with these options:
 
@@ -36,7 +36,7 @@ The system operates through a **menu-driven interface** with these options:
 ---
 
 
-## 📋 **Test Case 1: First-Time Setup & Commander Operations**
+## **Test Case 1: First-Time Setup & Commander Operations**
 
 ### **Step 1: Register a Commander**
 **Purpose**: Create a high-privilege user who can encrypt/decrypt files.
@@ -152,7 +152,7 @@ Logged out successfully!
 
 ---
 
-## 📋 **Test Case 2: Testing Role Enforcement (Pilot)**
+## **Test Case 2: Testing Role Enforcement (Pilot)**
 
 ### **Step 1: Register a Pilot**
 **Action:** Select `1`
@@ -229,7 +229,7 @@ Logged: decrypt by CURRENT_USER - SUCCESS
 
 ---
 
-## 📋 **Test Case 3: Security Features**
+## **Test Case 3: Security Features**
 
 ### **Tamper Detection Test**
 **Purpose**: Prove HMAC seal detects file modifications.
@@ -255,7 +255,7 @@ cryptography.exceptions.InvalidSignature: Signature did not match digest.
 
 ---
 
-## 🔍 **Understanding the Logs**
+## **Understanding the Logs**
 
 **Location**: `logs/audit.log`
 
@@ -278,7 +278,7 @@ cryptography.exceptions.InvalidSignature: Signature did not match digest.
 - **success:** True/False result (for security auditing)
 
 
-### ⚠️ **Common Issues & Solutions**
+### **Common Issues & Solutions**
 
 
 | Problem             | Cause                      | Solution                                   |
@@ -291,7 +291,7 @@ cryptography.exceptions.InvalidSignature: Signature did not match digest.
 
 
 
-### 🎯 **Security Best Practices**
+### **Security Best Practices**
 
 - **Strong Passwords:** Use 12+ characters with mixed case, numbers, symbols
 - **Role Separation:** Never share Commander credentials
@@ -301,7 +301,7 @@ cryptography.exceptions.InvalidSignature: Signature did not match digest.
 
 
 
-## 📞 Support & Troubleshooting
+## Support & Troubleshooting
 
 If you encounter issues:                                           
 

@@ -213,7 +213,7 @@ while True:
     print("\n================== Military Grade Mission Data Locker ==================")
 
     if logged_in_user:
-        print(f"Logged in: {logged_in_user['username ']}({logged_in_user['role']})")
+        print(f"Logged in: {logged_in_user['username']}({logged_in_user['role']})")
     else:
         print("Not logged in.")
 

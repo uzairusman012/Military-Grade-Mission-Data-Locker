@@ -1,14 +1,14 @@
-# 🎖️ Military-Grade Mission Data Locker
+# **Military-Grade Mission Data Locker**
 
 A Python-based secure information system designed to protect highly sensitive digital files using modern cryptographic methods, simulating defense-grade data protection systems.
 
-## 🔐 **Project Overview**
+## **Project Overview**
 
 The **Military-Grade Mission Data Locker** is a complete security framework that demonstrates real-world cryptography implementation. It safeguards mission-critical data through multi-layered protection: military-strength encryption, tamper-proof integrity verification, role-based access control, and comprehensive audit trails.
 
 ---
 
-## 🚀 **Key Features**
+## **Key Features**
 
 ### **Core Security**
 - ✅ **AES-256 Encryption** with CBC mode
@@ -24,7 +24,7 @@ The **Military-Grade Mission Data Locker** is a complete security framework that
 
 ---
 
-## 📂 **Project Structure**
+## **Project Structure**
 
 ```
 
@@ -40,7 +40,7 @@ Military Grade Mission Data Locker/
 
 ---
 
-## 🛠️ **Installation**
+## **Installation**
 
 1. **Install Python 3.8+**
 2. **Install dependencies:**
@@ -87,7 +87,7 @@ Enter same password
 
 ---
 
-## ✅ Verification Tests
+## **Verification Tests**
 
 - [ ] Passwords stored as `$argon2id$` hashes in the `users/` directory  
 - [ ] Encrypted files in `storage/` appear as unreadable ciphertext  
@@ -97,7 +97,7 @@ Enter same password
 
 ---
 
-## 🎓 Learning Outcomes
+## **Learning Outcomes**
 
 This project demonstrates core concepts in:
 
@@ -109,7 +109,7 @@ This project demonstrates core concepts in:
 
 ---
 
-## 👥 Authors
+## **Authors**
 
 Developed as part of an Information Security course project.
 
@@ -124,7 +124,7 @@ Comsats University Islamabad, Sahiwal Campus
 ---
 
 
-## **📄 License**
+## **License**
 
 MIT License - Educational Use
 
