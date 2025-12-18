@@ -60,7 +60,7 @@ def encrypt_file(file_path, key):
         f.write(iv + encrypted_data + hmac_value)
     
     print(f"File '{file_path}' encrypted successfully with HMAC seal!")
-    log_action("CURRENT_USER", "encrypt", file_path, True)
+    log_action(logged_in_user['username'] if logged_in_user else "SYSTEM", "encrypt", file_path, True)
 
 # ===================== DECRYPTOR ======================
 
@@ -101,7 +101,7 @@ def decrypt_file(encrypted_path, key):
         f.write(decrypted_data)
     
     print(f"File decrypted successfully: decrypted_mission_plan.txt")
-    log_action("CURRENT_USER", "decrypt", encrypted_path, True)
+    log_action(logged_in_user['username'] if logged_in_user else "SYSTEM", "decrypt", encrypted_path, True)
 
 
 
@@ -125,7 +125,35 @@ def log_action(username, action, filename, success):
     
     print(f"Logged: {action} by {username} - {'SUCCESS' if success else 'FAILED'}")
 
+# ==================== CREATE AND ENCRYPT MISSION FILE =====================
+def create_and_encrypt_mission_file():
+    
+    filename = input("Enter mission filename (e.g., op_night_hawk.txt): ")
+    print("Enter mission content (type 'EOF' on a new line when done): ")
 
+    lines = []
+    while True:
+        line = input()
+        if line.strip().upper() == "EOF":
+            break
+        lines.append(line)
+
+    content = "\n".join(lines)
+
+    #creating the file
+
+    filepath = f"mission_files/{filename}"
+    with open(filepath, "w") as f:
+        f.write(content)
+
+    print(f"Mission file created successfully: {filepath}")
+
+    # immediately encrypt it
+
+    key = derive_key(input("Enter encryption password: "))
+    encrypt_file(filepath, key)
+
+    print(f"Mission file encrypted and saved to storage/encrypted_{filename}")
 
 
 # ===================== USER REGISTRATION =====================
@@ -191,7 +219,7 @@ def login_user():
 PERMISSIONS = {
     "Commander": {"encrypt" : True, "decrypt" : True, "delete" : True},
     "Pilot": {"encrypt" : False, "decrypt" : True, "delete" : False},
-    "Analyst": {"decrypt" : False, "encrypt" : True, "delete" : False},
+    "Analyst": {"encrypt" : False, "decrypt" : True, "delete" : False},
     "Technician": {"encrypt" : False, "decrypt" : False, "delete" : False},
 }
 
@@ -219,7 +247,7 @@ while True:
 
     print("1. Register User")
     print("2. Login User")
-    print("3. Encrypt File")
+    print("3. Create & Encrypt Mission File")
     print("4. Decrypt File")
     print("5. Logout")
     print("6. Exit")
@@ -236,16 +264,22 @@ while True:
         if not logged_in_user:
             print("Must login first")
         elif check_permission(logged_in_user['role'], 'encrypt'):
-            key = derive_key(input("Enter encryption password: "))
-            encrypt_file("mission_plan.txt", key)
-            
+            create_and_encrypt_mission_file()
+        else:
+            print("Access Denied")
+
     elif choice == '4':
         if not logged_in_user:
             print("Must login first")
         elif check_permission(logged_in_user['role'], 'decrypt'):
-            key = derive_key(input("Enter decryption password: "))
-            decrypt_file("storage/encrypted_mission_plan.txt", key)
-        
+            filename = input("Enter file to decrypt: ")
+            encrypted_path = f"storage/encrypted_{filename}"
+            if not os.path.exists(encrypted_path):
+                print(f"Encrypted File '{encrypted_path}' not found.")
+            else:
+                key = derive_key(input("Enter decryption password: "))
+                decrypt_file(encrypted_path, key)
+
     elif choice == '5':
         if logged_in_user:
             log_action(logged_in_user['username'], "logout", "system", True)
