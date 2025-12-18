@@ -73,9 +73,9 @@
 
 ```text
 🏫 Institution:    COMSATS University, Sahiwal
-📚 Course:         Information Security (Semester Project)
+  📚 Course:         Information Security (Semester Project)
 ⏱️  Development:    November 2025 - January 2026
-🔐 Focus:          Cryptography & Access Control
+ 🔐 Focus:          Cryptography & Access Control                                                  
 👥 Team Size:      2 Developers
 ```
 
