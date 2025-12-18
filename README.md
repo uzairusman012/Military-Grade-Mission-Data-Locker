@@ -31,7 +31,7 @@
 <a href="https://github.com/uzairusman012">
 <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" />
 </a>
-<a href="mailto:your.muzairusman2@gmail.com">
+<a href="mailto:muzairusman2@gmail.com">
 <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
 </a>
 
@@ -46,20 +46,17 @@
 
 ### 🤝 Contributor
 
-<img src="https://github.com/contributor-username.png" width="120px;" alt="Contributor Picture" style="border-radius: 50%; border: 3px solid #0088ff;"/>
+<img src="https://github.com/Husnain-Shahid.png" width="120px;" alt="Contributor Picture" style="border-radius: 50%; border: 3px solid #0088ff;"/>
 
 **🎓 Husnain Shahid**
 
 `Developer & Documentation Specialist`
 
-<a href="https://github.com/contributor-username">
+<a href="https://github.com/Husnain-Shahid">
 <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" />
 </a>
-<a href="mailto:contributor.email@example.com">
+<a href="mailto:husnainshahid146276@gmail.com">
 <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
-</a>
-<a href="https://linkedin.com/in/contributorprofile">
-<img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white" />
 </a>
 
 **📋 Contributions:**
@@ -77,7 +74,7 @@
 ```text
 🏫 Institution:    COMSATS University, Sahiwal
 📚 Course:         Information Security (Semester Project)
-⏱️ Development:    November 2025 - January 2026
+⏱️  Development:    November 2025 - January 2026
 🔐 Focus:          Cryptography & Access Control
 👥 Team Size:      2 Developers
 ```
@@ -332,13 +329,13 @@ MILITARY-GRADE-MISSION-DATA-LOCKER/
 ├── requirements.txt                 # Python dependencies
 │
 ├── users/                           # User credential storage
-│   └── <username>.json              # Individual user data files
+│   └── <username>.json             # Individual user data files
 │
 ├── mission_files/                   # Plaintext mission files (pre-encryption)
 │   └── <filename>.txt
 │
 ├── storage/                         # Encrypted files storage
-│   └── encrypted_<filename>         # AES-256 encrypted files
+│   └── encrypted_<filename>        # AES-256 encrypted files
 │
 └── logs/                            # Audit logs
     └── audit.log                    # JSON-formatted activity log
@@ -506,7 +503,6 @@ This project is designed for **educational purposes** as part of an undergraduat
 ---
 
 <div align="center">
-
 
 **Made with 🔒 and ❤️ for Information Security**
 
