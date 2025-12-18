@@ -65,9 +65,6 @@
 - Testing & Debugging
 - GUI Development
 
-</td>
-</tr>
-
 ### 📊 Project Overview
 
 ```text
