@@ -67,16 +67,15 @@
 
 </td>
 </tr>
-</table>
 
 ### 📊 Project Overview
 
 ```text
-                      🏫 Institution:           COMSATS University, Sahiwal
-                          📚  Course:            Information Security (Semester Project)
-           ⏱️ Development:     November 2025 - January 2026  
-                                                  🔐 Focus:          Cryptography & Access Control                                                  
-👥 Team Size:      2 Developers
+🏫 Institution:     COMSATS University, Sahiwal
+📚  Course:         Information Security (Semester Project)
+⏱️ Development:     November 2025 - January 2026  
+🔐 Focus:           Cryptography & Access Control                                                  
+👥 Team Size:       2 Developers
 ```
 
 ### 🛠️ Tech Stack Used
