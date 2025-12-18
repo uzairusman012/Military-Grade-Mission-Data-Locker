@@ -7,6 +7,8 @@ from cryptography.hazmat.primitives import hmac
 from datetime import datetime
 import os
 import json
+import pyotp
+import base64
 
 ph = PasswordHasher()
 # ===================== KEY MAKER =====================
@@ -21,6 +23,12 @@ def derive_key(password, salt=b'my_fixed_salt'):
     )
 
     return kdf.derive(password.encode())
+
+# ===================== TOTP HELPER ===================
+
+def generate_totp_code(secret):
+    totp = pyotp.TOTP(secret)
+    return totp.now()
 
 # ===================== ENCRYPTOR =====================
 
@@ -158,31 +166,33 @@ def create_and_encrypt_mission_file():
 
 # ===================== USER REGISTRATION =====================
 
-# function for registering a new user
-
 def register_user():
 
     # making a directory to store user data if it doesn't exist
     os.makedirs("users", exist_ok=True)
 
-    username = input("Enter your name: ")
+    username = input("Enter your name: ").strip()
     password = input("Enter your password: ")
     role = input("Enter your role (Analyst/Commander/Pilot/Technician): ")
 
     password_hash = ph.hash(password)
 
+    totp_secret = pyotp.random_base32()
+
     user_data = {
         "username": username,
         "role": role,
-        "password_hash": password_hash
+        "password_hash": password_hash,
+        "totp_secret": totp_secret
         }
     
     with open(f"users/{username}.json", "w") as f:
         json.dump(user_data, f)
 
     print(f"User '{username}' registered as '{role}' successfully.")
-
-
+    print(f"Your TOTP secret (store this safely) is: {totp_secret}")
+    print(f"Current 6 digit TOTP code: {generate_totp_code(totp_secret)}")
+    print(f"Save this! You will need it to generate 2FA codes.")
    
 
 # ==================== LOGIN SYSTEM =====================
@@ -191,7 +201,7 @@ def register_user():
 
 def login_user():
 
-    username = input("Enter your name: ")
+    username = input("Enter your name: ").strip()
     password = input("Enter your password: ")
 
     try:
@@ -200,6 +210,18 @@ def login_user():
         
         # verifying the password
         ph.verify(user_data["password_hash"], password)
+
+        # verifying TOTP
+        totp_secret = user_data.get("totp_secret")
+        if totp_secret:
+            print("Two factor authentication is required.")
+            user_code = input("Enter 6 digit TOTP code: ")
+
+            totp = pyotp.TOTP(totp_secret)
+            if not totp.verify(user_code, valid_window=1):
+                print("Invalid TOTP code.")
+                log_action(username, "login", "system", False)
+                return None
 
         # if we reach here, the password is correct, so we will allow login
 
@@ -233,7 +255,7 @@ def check_permission(role, action):
 
 
 
-# ===================== TESTING MENU =====================
+# ===================== MAIN MENU ========================
 
 logged_in_user = None
 
@@ -251,8 +273,9 @@ while True:
     print("4. Decrypt File")
     print("5. Logout")
     print("6. Exit")
+    print("9. Generate TOTP Code (for testing)")
 
-    choice = input("Enter your choice (1-6): ")
+    choice = input("Enter your choice (1-6 or 9): ")
     
     if choice == '1':
         register_user()
@@ -289,6 +312,9 @@ while True:
     elif choice == '6':
         break
 
+    elif choice == '9':
+        secret = input("Enter your TOTP secret to generate code: ")
+        print(f"Current 6 digit TOTP code: {generate_totp_code(secret)}")    
     else:
         print("Invalid choice. Please try again.")
 
