@@ -66,6 +66,8 @@
 - GUI Development
 
 </td>
+</tr>
+</table>
 
 ### 📊 Project Overview
 
