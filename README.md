@@ -71,13 +71,13 @@
 
 ### 📊 Project Overview
 
-```text
-🏫 Institution:     COMSATS University, Sahiwal
-📚  Course:         Information Security (Semester Project)
-⏱️ Development:     November 2025 - January 2026  
-🔐 Focus:           Cryptography & Access Control                                                  
-👥 Team Size:       2 Developers
-```
+| | |
+|:---|:---|
+| 🏫 **Institution** | COMSATS University, Sahiwal |
+| 📚 **Course** | Information Security (Semester Project) |
+| ⏱️ **Development** | November 2025 - January 2026 |
+| 🔐 **Focus** | Cryptography & Access Control |
+| 👥 **Team Size** | 2 Developers |
 
 ### 🛠️ Tech Stack Used
 
@@ -85,11 +85,13 @@
 
 ### 💡 Learning Outcomes
 
-✅ Applied modern cryptographic algorithms  
-✅ Implemented secure authentication systems  
-✅ Designed role-based access control  
-✅ Built audit logging mechanisms  
-✅ Integrated multi-factor authentication  
+| Outcome |
+|:--------|
+| ✅ Applied modern cryptographic algorithms |
+| ✅ Implemented secure authentication systems |
+| ✅ Designed role-based access control |
+| ✅ Built audit logging mechanisms |
+| ✅ Integrated multi-factor authentication |
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -225,7 +227,7 @@ pip install -r requirements.txt
 1. **Clone or download the project**
 
 ```bash
-git clone <repository-url>
+git clone 
 cd military-grade-mission-data-locker
 ```
 
@@ -329,13 +331,13 @@ MILITARY-GRADE-MISSION-DATA-LOCKER/
 ├── requirements.txt                 # Python dependencies
 │
 ├── users/                           # User credential storage
-│   └── <username>.json             # Individual user data files
+│   └── <username>.json              # Individual user data files
 │
 ├── mission_files/                   # Plaintext mission files (pre-encryption)
 │   └── <filename>.txt
 │
 ├── storage/                         # Encrypted files storage
-│   └── encrypted_<filename>        # AES-256 encrypted files
+│   └── encrypted_<filename>         # AES-256 encrypted files
 │
 └── logs/                            # Audit logs
     └── audit.log                    # JSON-formatted activity log
