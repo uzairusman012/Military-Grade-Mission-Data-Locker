@@ -12,38 +12,72 @@
 
 ---
 
-## 👨‍💻 Project Lead
+## 👥 Project Team
 
 <div align="center">
 
 <table>
 <tr>
-<td align="center" width="200px">
-<img src="https://github.com/uzairusman012.png" width="100px;" alt="Profile Picture" style="border-radius: 50%; border: 3px solid #00ff00;"/>
-<br />
-<sub><b>🎓 M Uzair Usman</b></sub>
-<br />
-<sub>🔒 Software Engineer'28</sub>
-<br />
+<td align="center" width="350px">
+
+### 👨‍💻 Project Lead
+
+<img src="https://github.com/uzairusman012.png" width="120px;" alt="Profile Picture" style="border-radius: 50%; border: 3px solid #00ff00;"/>
+
+**🎓 M Uzair Usman**
+
+`Lead Developer & Security Architect`
+
 <a href="https://github.com/uzairusman012">
 <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" />
 </a>
-<br />
 <a href="mailto:muzairusman2@gmail.com">
 <img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
 </a>
-<br />
+
+**📋 Responsibilities:**
+- Core Architecture Design
+- Cryptographic Implementation
+- Security Protocol Development
+- Code Review & Testing
+
 </td>
-<td align="left" width="500px">
+<td align="center" width="350px">
 
-### 📊 Project Stats
+### 🤝 Contributor
 
-```text
-🎯 Role:           Lead Developer & Security Architect
-🏫 Institution:    COMSATS University, Sahiwal
-📚 Course:         Information Security (Semester Project)
-🔐 Focus:          Cryptography & Access Control
-```
+<img src="https://github.com/Husnain-Shahid.png" width="120px;" alt="Contributor Picture" style="border-radius: 50%; border: 3px solid #0088ff;"/>
+
+**🎓 Husnain Shahid**
+
+`Developer & Documentation Specialist`
+
+<a href="https://github.com/Husnain-Shahid">
+<img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white" />
+</a>
+<a href="mailto:husnainshahid146276@gmail.com">
+<img src="https://img.shields.io/badge/Email-D14836?style=for-the-badge&logo=gmail&logoColor=white" />
+</a>
+
+**📋 Contributions:**
+- Feature Development
+- Documentation & README
+- Testing & Debugging
+- GUI Development
+
+</td>
+</tr>
+</table>
+
+### 📊 Project Overview
+
+| | |
+|:---|:---|
+| 🏫 **Institution** | COMSATS University, Sahiwal |
+| 📚 **Course** | Information Security (Semester Project) |
+| ⏱️ **Development** | November 2025 - January 2026 |
+| 🔐 **Focus** | Cryptography & Access Control |
+| 👥 **Team Size** | 2 Developers |
 
 ### 🛠️ Tech Stack Used
 
@@ -51,15 +85,13 @@
 
 ### 💡 Learning Outcomes
 
-✅ Applied modern cryptographic algorithms  
-✅ Implemented secure authentication systems  
-✅ Designed role-based access control  
-✅ Built audit logging mechanisms  
-✅ Integrated multi-factor authentication  
-
-</td>
-</tr>
-</table>
+| Outcome |
+|:--------|
+| ✅ Applied modern cryptographic algorithms |
+| ✅ Implemented secure authentication systems |
+| ✅ Designed role-based access control |
+| ✅ Built audit logging mechanisms |
+| ✅ Integrated multi-factor authentication |
 
 ```
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -195,7 +227,7 @@ pip install -r requirements.txt
 1. **Clone or download the project**
 
 ```bash
-git clone <repository-url>
+git clone 
 cd military-grade-mission-data-locker
 ```
 
@@ -401,7 +433,6 @@ This is an academic project, but contributions and suggestions are welcome!
 
 - [ ] Add database support for user management
 - [ ] Implement file sharing between users
-- [ ] Add GUI interface
 - [ ] Support for multiple encryption algorithms
 - [ ] Implement file version control
 - [ ] Add backup and recovery mechanisms
@@ -457,7 +488,7 @@ SOFTWARE.
 - **Cryptography Library**: [pyca/cryptography](https://cryptography.io/)
 - **Argon2**: [Password Hashing Competition Winner](https://www.password-hashing.net/)
 - **PyOTP**: [TOTP/HOTP Implementation](https://pyauth.github.io/pyotp/)
-- Course Instructor [Ms. Mah Noor Fatima & Sir Manzar Abbas] and Teaching Assistants
+- Course Instructor and Teaching Assistants
 
 ---
 
@@ -475,7 +506,6 @@ This project is designed for **educational purposes** as part of an undergraduat
 
 <div align="center">
 
-
 **Made with 🔒 and ❤️ for Information Security**
 
 ⭐ Star this repository if you found it helpful!
@@ -484,9 +514,9 @@ This project is designed for **educational purposes** as part of an undergraduat
 
 ### 📊 Repository Stats
 
-![GitHub code size](https://img.shields.io/github/languages/code-size/yourusername/military-grade-mission-data-locker)
-![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/military-grade-mission-data-locker)
-![GitHub last commit](https://img.shields.io/github/last-commit/yourusername/military-grade-mission-data-locker)
-![GitHub issues](https://img.shields.io/github/issues/yourusername/military-grade-mission-data-locker)
+![GitHub code size](https://img.shields.io/github/languages/code-size/uzairusman012/military-grade-mission-data-locker)
+![GitHub repo size](https://img.shields.io/github/repo-size/uzairusman012/military-grade-mission-data-locker)
+![GitHub last commit](https://img.shields.io/github/last-commit/uzairusman012/military-grade-mission-data-locker)
+![GitHub issues](https://img.shields.io/github/issues/uzairusman012/military-grade-mission-data-locker)
 
 </div>
