@@ -113,7 +113,9 @@ def check_permission(role, action):
 # ===================== ANIMATION HELPERS =====================
 
 def animate_fade_in(widget, start_alpha=0.0, end_alpha=1.0, steps=10, delay=20):
-    """Fade in animation for widgets"""
+    
+    # Fade in animation for widgets
+
     def fade_step(current_step):
         if current_step <= steps:
             alpha = start_alpha + (end_alpha - start_alpha) * (current_step / steps)
@@ -130,7 +132,9 @@ def animate_fade_in(widget, start_alpha=0.0, end_alpha=1.0, steps=10, delay=20):
         pass
 
 def animate_slide_in(window, direction='down', distance=30, steps=12, delay=15):
-    """Slide in animation for windows"""
+    
+    # Slide in animation for windows
+
     def slide_step(current_step):
         if current_step <= steps:
             try:
@@ -232,7 +236,9 @@ class OptimizedBackground:
 # ===================== SELECTABLE CODE DISPLAY =====================
 
 class SelectableCodeDisplay(ctk.CTkTextbox):
-    """A selectable and copyable code display widget"""
+    
+    # A selectable and copyable code display widget
+
     def __init__(self, master, code_text="", **kwargs):
         default_kwargs = {
             'font': ("Courier", 24, "bold"),
@@ -258,7 +264,9 @@ class SelectableCodeDisplay(ctk.CTkTextbox):
         self.bind('<Button-3>', self.show_context_menu)
     
     def show_context_menu(self, event):
-        """Show right-click context menu"""
+        
+        # Show right-click context menu
+
         menu = ctk.CTkToplevel(self)
         menu.overrideredirect(True)
         menu.geometry(f"+{event.x_root}+{event.y_root}")
@@ -272,7 +280,9 @@ class SelectableCodeDisplay(ctk.CTkTextbox):
         menu.focus_set()
     
     def copy_to_clipboard(self):
-        """Copy content to clipboard"""
+        
+        # Copy content to clipboard
+
         try:
             text = self.get("1.0", "end-1c")
             self.master.clipboard_clear()
