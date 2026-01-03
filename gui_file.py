@@ -295,7 +295,9 @@ class SelectableCodeDisplay(ctk.CTkTextbox):
             pass
     
     def update_code(self, new_code):
-        """Update the displayed code"""
+        
+        # Update the displayed code
+
         self.configure(state="normal")
         self.delete("1.0", "end")
         self.insert("1.0", new_code)
@@ -1418,7 +1420,9 @@ class MilitaryDataLockerGUI:
                       corner_radius=12).pack(pady=25)
     
     def show_pre_login_totp_generator(self):
-        """TOTP generator for pre-login - Compact size"""
+        
+        # TOTP generator for pre-login - Compact size
+
         totp_window = ctk.CTkToplevel(self.window)
         totp_window.title("🔑 TOTP Code Generator")
         totp_window.geometry("600x700")
@@ -1545,7 +1549,9 @@ class MilitaryDataLockerGUI:
                       corner_radius=12).pack(pady=(0,20))
     
     def show_totp_generator(self):
-        """Post-login TOTP generator"""
+        
+        # Post-login TOTP generator
+
         totp_window = ctk.CTkToplevel(self.window)
         totp_window.title("🔑 TOTP Generator")
         totp_window.geometry("600x550")
