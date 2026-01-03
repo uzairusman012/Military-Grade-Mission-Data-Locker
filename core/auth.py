@@ -2,6 +2,7 @@ from argon2 import PasswordHasher
 import os
 import json
 import pyotp
+import base64
 from core.logger import log_action
 
 ph = PasswordHasher()
@@ -28,13 +29,19 @@ def register_user():
 
     password_hash = ph.hash(password)
 
+    # Generate a unique salt for each user
+
+    salt = os.urandom(16)
+    base64_salt = base64.b64encode(salt).decode('utf-8')
+
     totp_secret = pyotp.random_base32()
 
     user_data = {
         "username": username,
         "role": role,
         "password_hash": password_hash,
-        "totp_secret": totp_secret
+        "totp_secret": totp_secret,
+        "salt": base64_salt
         }
     
     with open(f"users/{username}.json", "w") as f:
@@ -58,9 +65,16 @@ def login_user():
     try:
         with open(f"users/{username}.json", "r") as f:
             user_data = json.load(f)
+
+        # Retrieve the salt from the user data
+        base64_salt = user_data['salt']
+        salt = base64.b64decode(base64_salt)    
         
         # verifying the password
-        ph.verify(user_data["password_hash"], password)
+        if not ph.verify(user_data["password_hash"], password):
+            print("Invalid password.")
+            log_action(username, "login", "system", False)
+            return None
 
         # verifying TOTP
         totp_secret = user_data.get("totp_secret")
@@ -80,7 +94,11 @@ def login_user():
         log_action(username, "login", "system", True)
         return user_data
     
-    except:
-        print("Login failed")
+    except FileNotFoundError:
+        print("User not found")
+        log_action(username, "login", "system", False)
+        return None
+    except Exception as e:
+        print(f"Login failed: {e}")
         log_action(username, "login", "system", False)
         return None

@@ -3,6 +3,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hmac
+from cryptography.hazmat.primitives import padding
 import os
 
 # ===================== KEY MAKER =====================
@@ -37,14 +38,13 @@ def encrypt_file(file_path, key):
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         encryptor = cipher.encryptor()
 
-        # padding the data
-
-        while len(original_data) % 16 != 0:
-            original_data += b' '
+        # using PKCS7 padding
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(original_data) + padder.finalize()
         
         # encrypting the data
 
-        encrypted_data = encryptor.update(original_data) + encryptor.finalize()
+        encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
 
         # generating HMAC for integrity
 
@@ -92,11 +92,15 @@ def decrypt_file(encrypted_path, key):
 
         # decrypting the data
 
-        decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
+        decrypted_padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
 
-        # removing padding
-
-        decrypted_data = decrypted_data.rstrip(b' ')
+        # removing PKCS7 padding
+        unpadder = padding.PKCS7(128).unpadder()
+        try:
+            decrypted_data = unpadder.update(decrypted_padded_data) + unpadder.finalize()
+        except ValueError:
+            print("Invalid padding.")
+            return False
 
         # saving the decrypted data
 

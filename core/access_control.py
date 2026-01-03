@@ -7,6 +7,8 @@ PERMISSIONS = {
     "Technician": {"encrypt" : False, "decrypt" : False, "delete" : False},
 }
 
+# verify permission
+
 def check_permission(role, action):
     
     if PERMISSIONS.get(role, {}).get(action, False):
