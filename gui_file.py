@@ -6,12 +6,14 @@ from datetime import datetime
 import pyotp
 import random
 import math
+import base64
 from argon2 import PasswordHasher
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hmac
+from cryptography.hazmat.primitives import padding
 
 # Initialize password hasher
 ph = PasswordHasher()
@@ -19,6 +21,7 @@ ph = PasswordHasher()
 # ===================== BACKEND FUNCTIONS =====================
 
 def derive_key(password, salt=b'my_fixed_salt'):
+    """Derive encryption key from password using PBKDF2"""
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -28,10 +31,12 @@ def derive_key(password, salt=b'my_fixed_salt'):
     return kdf.derive(password.encode())
 
 def generate_totp_code(secret):
+    """Generate current TOTP code"""
     totp = pyotp.TOTP(secret)
     return totp.now()
 
 def log_action(username, action, filename, success):
+    """Log user actions with HMAC integrity"""
     os.makedirs("logs", exist_ok=True)
     log_entry = {
         "timestamp": datetime.now().isoformat(),
@@ -44,6 +49,7 @@ def log_action(username, action, filename, success):
         f.write(json.dumps(log_entry) + "\n")
 
 def encrypt_file(file_path, key, username):
+    """Encrypt file with AES-256-CBC and HMAC"""
     try:
         with open(file_path, "rb") as f:
             original_data = f.read()
@@ -52,11 +58,13 @@ def encrypt_file(file_path, key, username):
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         encryptor = cipher.encryptor()
         
-        while len(original_data) % 16 != 0:
-            original_data += b' '
+        # Use PKCS7 padding
+        padder = padding.PKCS7(128).padder()
+        padded_data = padder.update(original_data) + padder.finalize()
         
-        encrypted_data = encryptor.update(original_data) + encryptor.finalize()
+        encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
         
+        # Generate HMAC for integrity
         h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
         h.update(iv + encrypted_data)
         hmac_value = h.finalize()
@@ -72,6 +80,7 @@ def encrypt_file(file_path, key, username):
         return False, str(e)
 
 def decrypt_file(encrypted_path, key, username):
+    """Decrypt file and verify HMAC"""
     try:
         with open(encrypted_path, "rb") as f:
             data = f.read()
@@ -80,6 +89,7 @@ def decrypt_file(encrypted_path, key, username):
         hmac_value = data[-32:]
         encrypted_data = data[16:-32]
         
+        # Verify HMAC
         h = hmac.HMAC(key, hashes.SHA256(), backend=default_backend())
         h.update(iv + encrypted_data)
         h.verify(hmac_value)
@@ -87,8 +97,11 @@ def decrypt_file(encrypted_path, key, username):
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
         
-        decrypted_data = decryptor.update(encrypted_data) + decryptor.finalize()
-        decrypted_data = decrypted_data.rstrip(b' ')
+        decrypted_padded_data = decryptor.update(encrypted_data) + decryptor.finalize()
+        
+        # Remove PKCS7 padding
+        unpadder = padding.PKCS7(128).unpadder()
+        decrypted_data = unpadder.update(decrypted_padded_data) + unpadder.finalize()
         
         output_filename = f"decrypted_{os.path.basename(encrypted_path)[10:]}"
         with open(output_filename, "wb") as f:
@@ -108,14 +121,13 @@ PERMISSIONS = {
 }
 
 def check_permission(role, action):
+    """Check if role has permission for action"""
     return PERMISSIONS.get(role, {}).get(action, False)
 
 # ===================== ANIMATION HELPERS =====================
 
 def animate_fade_in(widget, start_alpha=0.0, end_alpha=1.0, steps=10, delay=20):
-    
-    # Fade in animation for widgets
-
+    """Fade in animation for widgets"""
     def fade_step(current_step):
         if current_step <= steps:
             alpha = start_alpha + (end_alpha - start_alpha) * (current_step / steps)
@@ -131,15 +143,12 @@ def animate_fade_in(widget, start_alpha=0.0, end_alpha=1.0, steps=10, delay=20):
     except:
         pass
 
-def animate_slide_in(window, direction='down', distance=30, steps=12, delay=15):
-    
-    # Slide in animation for windows
-
+def animate_slide_in(window, direction='down', distance=50, steps=15, delay=10):
+    """Slide in animation for windows"""
     def slide_step(current_step):
         if current_step <= steps:
             try:
                 progress = current_step / steps
-                # Ease-out effect
                 progress = 1 - (1 - progress) ** 3
                 
                 if direction == 'down':
@@ -167,7 +176,7 @@ def animate_slide_in(window, direction='down', distance=30, steps=12, delay=15):
     except:
         pass
 
-# ===================== OPTIMIZED ANIMATED BACKGROUND =====================
+# ===================== ANIMATED BACKGROUND =====================
 
 class OptimizedBackground:
     def __init__(self, canvas, width, height):
@@ -175,7 +184,6 @@ class OptimizedBackground:
         self.width = width
         self.height = height
         self.particles = []
-        self.lines = []
         self.is_animating = True
         self.init_particles()
         self.animate()
@@ -233,77 +241,7 @@ class OptimizedBackground:
     def stop(self):
         self.is_animating = False
 
-# ===================== SELECTABLE CODE DISPLAY =====================
-
-class SelectableCodeDisplay(ctk.CTkTextbox):
-    
-    # A selectable and copyable code display widget
-
-    def __init__(self, master, code_text="", **kwargs):
-        default_kwargs = {
-            'font': ("Courier", 24, "bold"),
-            'fg_color': "transparent",
-            'border_width': 0,
-            'height': 60,
-            'wrap': "none"
-        }
-        default_kwargs.update(kwargs)
-        
-        super().__init__(master, **default_kwargs)
-        
-        if code_text:
-            self.insert("1.0", code_text)
-        
-        self.configure(state="disabled")
-        
-        # Enable selection
-        self.bind('<Button-1>', lambda e: self.configure(state="normal"))
-        self.bind('<ButtonRelease-1>', lambda e: self.after(10, lambda: self.configure(state="disabled")))
-        
-        # Context menu
-        self.bind('<Button-3>', self.show_context_menu)
-    
-    def show_context_menu(self, event):
-        
-        # Show right-click context menu
-
-        menu = ctk.CTkToplevel(self)
-        menu.overrideredirect(True)
-        menu.geometry(f"+{event.x_root}+{event.y_root}")
-        
-        copy_btn = ctk.CTkButton(menu, text="📋 Copy", width=120, height=35,
-                                command=lambda: [self.copy_to_clipboard(), menu.destroy()],
-                                fg_color="#2d6a3e", hover_color="#1a472a")
-        copy_btn.pack(padx=5, pady=5)
-        
-        menu.bind('<FocusOut>', lambda e: menu.destroy())
-        menu.focus_set()
-    
-    def copy_to_clipboard(self):
-        
-        # Copy content to clipboard
-
-        try:
-            text = self.get("1.0", "end-1c")
-            self.master.clipboard_clear()
-            self.master.clipboard_append(text)
-            
-            original_fg = self.cget("fg_color")
-            self.configure(fg_color="#1a472a")
-            self.after(300, lambda: self.configure(fg_color=original_fg))
-        except:
-            pass
-    
-    def update_code(self, new_code):
-        
-        # Update the displayed code
-
-        self.configure(state="normal")
-        self.delete("1.0", "end")
-        self.insert("1.0", new_code)
-        self.configure(state="disabled")
-
-# ===================== SMOOTH ANIMATED BUTTON =====================
+# ===================== UI COMPONENTS =====================
 
 class SmoothButton(ctk.CTkButton):
     def __init__(self, master, **kwargs):
@@ -316,8 +254,6 @@ class SmoothButton(ctk.CTkButton):
     
     def on_leave(self, e):
         self.configure(cursor="")
-
-# ===================== LOADING ANIMATION =====================
 
 class LoadingAnimation:
     def __init__(self, parent, text="Processing..."):
@@ -333,16 +269,14 @@ class LoadingAnimation:
         y = (self.window.winfo_screenheight() // 2) - 75
         self.window.geometry(f"+{x}+{y}")
         
-        animate_fade_in(self.window, 0.0, 1.0, steps=8, delay=15)
-        
-        self.label = ctk.CTkLabel(self.window, text=text, 
-                                 font=("Arial", 16, "bold"))
+        self.label = ctk.CTkLabel(self.window, text=text, font=("Arial", 16, "bold"))
         self.label.pack(pady=30)
         
         self.progress = ctk.CTkProgressBar(self.window, width=250)
         self.progress.pack(pady=20)
         self.progress.set(0)
         
+        animate_fade_in(self.window, 0.0, 1.0, steps=8, delay=15)
         self.animate_progress()
     
     def animate_progress(self):
@@ -354,7 +288,57 @@ class LoadingAnimation:
     def close(self):
         self.window.destroy()
 
-# ===================== GUI APPLICATION =====================
+class SelectableCodeDisplay(ctk.CTkEntry):
+    """Entry widget for displaying selectable code"""
+    def __init__(self, master, code_text="", **kwargs):
+        default_kwargs = {
+            'font': ("Courier", 18, "bold"),
+            'justify': "center",
+            'fg_color': "transparent",
+            'border_width': 0,
+            'state': "normal"
+        }
+        default_kwargs.update(kwargs)
+        
+        super().__init__(master, **default_kwargs)
+        
+        if code_text:
+            self.insert(0, code_text)
+        
+        self.configure(state="readonly")
+        self.bind('<Button-3>', self.show_context_menu)
+    
+    def show_context_menu(self, event):
+        menu = ctk.CTkToplevel(self)
+        menu.overrideredirect(True)
+        menu.geometry(f"+{event.x_root}+{event.y_root}")
+        
+        copy_btn = ctk.CTkButton(menu, text="📋 Copy", width=100,
+                                command=lambda: [self.copy_to_clipboard(), menu.destroy()],
+                                fg_color="#2d6a3e", hover_color="#1a472a")
+        copy_btn.pack(padx=5, pady=5)
+        
+        menu.bind('<FocusOut>', lambda e: menu.destroy())
+        menu.focus_set()
+    
+    def copy_to_clipboard(self):
+        try:
+            text = self.get()
+            self.master.clipboard_clear()
+            self.master.clipboard_append(text)
+            original_fg = self.cget("fg_color")
+            self.configure(fg_color="#1a472a")
+            self.after(200, lambda: self.configure(fg_color=original_fg))
+        except:
+            pass
+    
+    def update_code(self, new_code):
+        self.configure(state="normal")
+        self.delete(0, "end")
+        self.insert(0, new_code)
+        self.configure(state="readonly")
+
+# ===================== MAIN GUI APPLICATION =====================
 
 class MilitaryDataLockerGUI:
     def __init__(self):
@@ -426,6 +410,17 @@ class MilitaryDataLockerGUI:
             self.current_frame.destroy()
             self.current_frame = None
     
+    def animate_screen_transition(self, frame):
+        def fade_in_step(alpha=0.0):
+            if alpha <= 1.0:
+                try:
+                    frame.configure(fg_color=f"#0a0a0a")
+                    frame.after(10, lambda: fade_in_step(alpha + 0.1))
+                except:
+                    pass
+        
+        frame.after(10, lambda: fade_in_step())
+    
     def show_login_screen(self):
         self.clear_frame()
         
@@ -434,8 +429,8 @@ class MilitaryDataLockerGUI:
         
         self.create_animated_background(self.current_frame)
         self.window.update_idletasks()
+        self.animate_screen_transition(self.current_frame)
         
-        # Scrollable container
         scroll_container = ctk.CTkScrollableFrame(self.current_frame, fg_color="transparent")
         scroll_container.pack(fill="both", expand=True, padx=50, pady=50)
         
@@ -444,7 +439,6 @@ class MilitaryDataLockerGUI:
         content.pack(pady=20, padx=20, fill="both", expand=True)
         content.pack_configure(ipadx=50, ipady=30)
         
-        # Header
         title = ctk.CTkLabel(content, text="🔐 MILITARY GRADE", 
                          font=("Arial Black", 28, "bold"), text_color="#00ff00")
         title.pack(pady=(25, 5))
@@ -457,14 +451,12 @@ class MilitaryDataLockerGUI:
                                      font=("Courier", 13), text_color="#00ff00")
         security_label.pack(pady=12)
         
-        # Login Form
         form_frame = ctk.CTkFrame(content, fg_color="transparent")
         form_frame.pack(pady=15, padx=50, fill="both", expand=True)
         
         ctk.CTkLabel(form_frame, text="🔑 SYSTEM LOGIN", 
                     font=("Arial", 22, "bold")).pack(pady=12)
         
-        # Username
         user_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         user_frame.pack(pady=8, fill="x")
         
@@ -474,7 +466,6 @@ class MilitaryDataLockerGUI:
                                            fg_color="transparent", height=40)
         self.login_username.pack(side="left", fill="both", expand=True, padx=5, pady=10)
         
-        # Password
         pass_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         pass_frame.pack(pady=8, fill="x")
         
@@ -484,7 +475,6 @@ class MilitaryDataLockerGUI:
                                            fg_color="transparent", height=40)
         self.login_password.pack(side="left", fill="both", expand=True, padx=5, pady=10)
         
-        # TOTP
         totp_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         totp_frame.pack(pady=8, fill="x")
         
@@ -494,23 +484,23 @@ class MilitaryDataLockerGUI:
                                        fg_color="transparent", height=40)
         self.login_totp.pack(side="left", fill="both", expand=True, padx=5, pady=10)
         
-        # Buttons
         btn_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
         btn_frame.pack(pady=20)
         
-        SmoothButton(btn_frame, text="🚀 ACCESS SYSTEM", 
-                     command=self.login_user,
-                     width=200, height=50, font=("Arial", 15, "bold"),
-                     fg_color="#2d6a3e", hover_color="#1a472a",
-                     corner_radius=12).pack(side="left", padx=8)
+        login_btn = SmoothButton(btn_frame, text="🚀 ACCESS SYSTEM", 
+                                  command=self.login_user,
+                                  width=200, height=50, font=("Arial", 15, "bold"),
+                                  fg_color="#2d6a3e", hover_color="#1a472a",
+                                  corner_radius=12)
+        login_btn.pack(side="left", padx=8)
         
-        SmoothButton(btn_frame, text="📝 NEW USER", 
-                     command=self.show_register_screen,
-                     width=200, height=50, font=("Arial", 15, "bold"),
-                     fg_color="#4a4a4a", hover_color="#2d2d2d",
-                     corner_radius=12).pack(side="left", padx=8)
+        register_btn = SmoothButton(btn_frame, text="📝 NEW USER", 
+                                     command=self.show_register_screen,
+                                     width=200, height=50, font=("Arial", 15, "bold"),
+                                     fg_color="#4a4a4a", hover_color="#2d2d2d",
+                                     corner_radius=12)
+        register_btn.pack(side="left", padx=8)
         
-        # TOTP Generator
         totp_gen_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
         totp_gen_frame.pack(pady=8)
         
@@ -523,9 +513,9 @@ class MilitaryDataLockerGUI:
         ctk.CTkLabel(totp_gen_frame, text="(Need a 2FA code for login? Click here)", 
                     font=("Arial", 10), text_color="gray").pack(pady=(3,0))
         
-        # Footer
-        ctk.CTkLabel(content, text="⚠️ Unauthorized access is prohibited",
-                    font=("Courier", 11), text_color="#ff6b6b").pack(side="bottom", pady=15)
+        footer = ctk.CTkLabel(content, text="⚠️ Unauthorized access is prohibited",
+                             font=("Courier", 11), text_color="#ff6b6b")
+        footer.pack(side="bottom", pady=15)
     
     def show_register_screen(self):
         self.clear_frame()
@@ -535,6 +525,7 @@ class MilitaryDataLockerGUI:
         
         self.create_animated_background(self.current_frame)
         self.window.update_idletasks()
+        self.animate_screen_transition(self.current_frame)
         
         scroll_container = ctk.CTkScrollableFrame(self.current_frame, fg_color="transparent")
         scroll_container.pack(fill="both", expand=True, padx=50, pady=50)
@@ -544,7 +535,6 @@ class MilitaryDataLockerGUI:
         content.pack(pady=20, padx=20, fill="both", expand=True)
         content.pack_configure(ipadx=50, ipady=30)
         
-        # Header
         header = ctk.CTkFrame(content, fg_color="#1a472a", corner_radius=15)
         header.pack(fill="x", padx=30, pady=25)
         
@@ -558,7 +548,6 @@ class MilitaryDataLockerGUI:
         form_frame = ctk.CTkFrame(content, fg_color="transparent")
         form_frame.pack(pady=20, padx=50, fill="both", expand=True)
         
-        # Username
         user_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         user_frame.pack(pady=10, fill="x")
         
@@ -569,7 +558,6 @@ class MilitaryDataLockerGUI:
                                         fg_color="transparent", height=38)
         self.reg_username.pack(fill="x", padx=15, pady=(5,12))
         
-        # Password
         pass_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         pass_frame.pack(pady=10, fill="x")
         
@@ -580,7 +568,6 @@ class MilitaryDataLockerGUI:
                                         fg_color="transparent", height=38)
         self.reg_password.pack(fill="x", padx=15, pady=(5,12))
         
-        # Role
         role_frame = ctk.CTkFrame(form_frame, fg_color="#2a2a2a", corner_radius=10)
         role_frame.pack(pady=10, fill="x")
         
@@ -595,7 +582,6 @@ class MilitaryDataLockerGUI:
         self.reg_role.set("Select Clearance Level")
         self.reg_role.pack(fill="x", padx=15, pady=(5,12))
         
-        # Buttons
         btn_frame = ctk.CTkFrame(form_frame, fg_color="transparent")
         btn_frame.pack(pady=25)
         
@@ -631,11 +617,16 @@ class MilitaryDataLockerGUI:
             password_hash = ph.hash(password)
             totp_secret = pyotp.random_base32()
             
+            # Generate unique salt for this user
+            salt = os.urandom(16)
+            base64_salt = base64.b64encode(salt).decode('utf-8')
+            
             user_data = {
                 "username": username,
                 "role": role,
                 "password_hash": password_hash,
-                "totp_secret": totp_secret
+                "totp_secret": totp_secret,
+                "salt": base64_salt
             }
             
             with open(f"users/{username}.json", "w") as f:
@@ -643,7 +634,7 @@ class MilitaryDataLockerGUI:
             
             loading.close()
             
-            # Show TOTP secret
+            # Registration success window with scrollable content
             result_window = ctk.CTkToplevel(self.window)
             result_window.title("✅ Registration Successful")
             result_window.geometry("650x600")
@@ -658,58 +649,68 @@ class MilitaryDataLockerGUI:
             animate_fade_in(result_window)
             animate_slide_in(result_window, 'down', 30)
             
-            # Header
+            # Header - non-scrollable
             header = ctk.CTkFrame(result_window, fg_color="#1a472a", corner_radius=0)
             header.pack(fill="x")
             
             ctk.CTkLabel(header, text="✅ ACCOUNT CREATED!", 
-                        font=("Arial Black", 22, "bold"),
-                        text_color="#00ff00").pack(pady=25)
+                        font=("Arial Black", 20, "bold"),
+                        text_color="#00ff00").pack(pady=18)
             
-            info_frame = ctk.CTkFrame(result_window, fg_color="#2a2a2a")
-            info_frame.pack(pady=25, padx=35, fill="both", expand=True)
+            # Scrollable content area
+            scroll_frame = ctk.CTkScrollableFrame(result_window, fg_color="#2a2a2a", height=400)
+            scroll_frame.pack(fill="both", expand=True, padx=20, pady=15)
             
             # User info
-            info_box = ctk.CTkFrame(info_frame, fg_color="#1a1a1a", corner_radius=10)
-            info_box.pack(pady=15, padx=25, fill="x")
+            info_box = ctk.CTkFrame(scroll_frame, fg_color="#1a1a1a", corner_radius=10)
+            info_box.pack(pady=10, padx=10, fill="x")
             
             ctk.CTkLabel(info_box, text=f"👤 Username: {username}", 
-                        font=("Arial", 15, "bold"), anchor="w").pack(pady=10, padx=18, fill="x")
+                        font=("Arial", 14, "bold"), anchor="w").pack(pady=8, padx=15, fill="x")
             ctk.CTkLabel(info_box, text=f"🎖️ Role: {role}", 
-                        font=("Arial", 15, "bold"), anchor="w").pack(pady=10, padx=18, fill="x")
+                        font=("Arial", 14, "bold"), anchor="w").pack(pady=8, padx=15, fill="x")
             
-            # TOTP Secret - SELECTABLE
-            ctk.CTkLabel(info_frame, text="⚠️ SAVE YOUR 2FA SECRET", 
-                        font=("Arial", 16, "bold"), text_color="#ff6b6b").pack(pady=15)
+            # Warning
+            ctk.CTkLabel(scroll_frame, text="⚠️ SAVE YOUR 2FA SECRET", 
+                        font=("Arial", 15, "bold"), text_color="#ff6b6b").pack(pady=12)
             
-            ctk.CTkLabel(info_frame, text="(Select and copy with Ctrl+C or right-click)", 
-                        font=("Arial", 11), text_color="gray").pack(pady=3)
+            ctk.CTkLabel(scroll_frame, text="Right-click to copy:", 
+                        font=("Arial", 12)).pack(pady=3)
             
-            secret_box = ctk.CTkFrame(info_frame, fg_color="#1a472a", corner_radius=10)
-            secret_box.pack(pady=10, padx=25, fill="x")
+            # TOTP Secret
+            secret_box = ctk.CTkFrame(scroll_frame, fg_color="#1a472a", corner_radius=10)
+            secret_box.pack(pady=10, padx=10, fill="x")
             
-            secret_display = SelectableCodeDisplay(secret_box, code_text=totp_secret,
-                                                   font=("Courier", 16, "bold"), height=50)
-            secret_display.pack(pady=15, padx=20, fill="x")
+            ctk.CTkLabel(secret_box, text="🔐 TOTP SECRET:", 
+                        font=("Arial", 12, "bold")).pack(pady=(12,5))
             
-            # Current TOTP - SELECTABLE
+            secret_display = SelectableCodeDisplay(secret_box, code_text=totp_secret, 
+                                                   font=("Courier", 14, "bold"), height=45)
+            secret_display.pack(pady=(0,12), padx=15, fill="x")
+            
+            # Current code
             current_code = generate_totp_code(totp_secret)
             
-            code_frame = ctk.CTkFrame(info_frame, fg_color="#1a1a1a", corner_radius=10)
-            code_frame.pack(pady=10, padx=25, fill="x")
+            code_frame = ctk.CTkFrame(scroll_frame, fg_color="#1a1a1a", corner_radius=10)
+            code_frame.pack(pady=10, padx=10, fill="x")
             
-            ctk.CTkLabel(code_frame, text="🔐 Current Login Code", 
-                        font=("Arial", 13)).pack(pady=(12,5))
+            ctk.CTkLabel(code_frame, text="🔐 Current Login Code:", 
+                        font=("Arial", 12, "bold")).pack(pady=(12,5))
             
             code_display = SelectableCodeDisplay(code_frame, code_text=current_code,
-                                                 font=("Arial", 28, "bold"), height=50)
-            code_display.pack(pady=(0,15), padx=20, fill="x")
+                                                 font=("Arial", 28, "bold"), height=40)
+            code_display.pack(pady=(0,12), padx=15, fill="x")
             
+            # Info at bottom
+            ctk.CTkLabel(scroll_frame, text="ℹ️ Use this code to login now\n(Changes every 30 seconds)", 
+                        font=("Arial", 10), text_color="gray").pack(pady=10)
+            
+            # Bottom button - non-scrollable
             SmoothButton(result_window, text="🎯 PROCEED TO LOGIN", 
                          command=lambda: [result_window.destroy(), self.show_login_screen()],
-                         width=280, height=55, font=("Arial", 15, "bold"),
+                         width=280, height=50, font=("Arial", 14, "bold"),
                          fg_color="#2d6a3e", hover_color="#1a472a",
-                         corner_radius=12).pack(pady=25)
+                         corner_radius=12).pack(pady=15)
             
         except Exception as e:
             if 'loading' in locals():
@@ -746,7 +747,6 @@ class MilitaryDataLockerGUI:
             self.logged_in_user = user_data
             log_action(username, "login", "system", True)
             
-            # Success message
             success_window = ctk.CTkToplevel(self.window)
             success_window.title("✅ Access Granted")
             success_window.geometry("450x300")
@@ -796,11 +796,11 @@ class MilitaryDataLockerGUI:
         
         self.create_animated_background(self.current_frame)
         self.window.update_idletasks()
+        self.animate_screen_transition(self.current_frame)
         
         main_container = ctk.CTkFrame(self.current_frame, fg_color="transparent")
         main_container.pack(fill="both", expand=True, padx=30, pady=30)
         
-        # Header
         header = ctk.CTkFrame(main_container, fg_color="#1a472a", corner_radius=15, height=110)
         header.pack(fill="x", pady=(0, 25))
         header.pack_propagate(False)
@@ -829,11 +829,9 @@ class MilitaryDataLockerGUI:
                     text=f"🎖️ {self.logged_in_user['role']}", 
                     font=("Arial", 13), text_color="#00ff00").pack(side="top", padx=25, pady=(0,12))
         
-        # Content area
         content = ctk.CTkFrame(main_container, fg_color="transparent")
         content.pack(fill="both", expand=True)
         
-        # Left panel
         left_panel = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=15)
         left_panel.pack(side="left", fill="both", expand=True, padx=(0, 12))
         
@@ -846,7 +844,6 @@ class MilitaryDataLockerGUI:
         ops_scroll = ctk.CTkScrollableFrame(left_panel, fg_color="transparent")
         ops_scroll.pack(fill="both", expand=True, padx=18, pady=(0,18))
         
-        # Operations buttons
         operations = []
         
         if check_permission(self.logged_in_user['role'], 'encrypt'):
@@ -857,12 +854,13 @@ class MilitaryDataLockerGUI:
             operations.append(("🔓", "DECRYPT FILE", "Access encrypted mission data",
                              "#4a6a8a", "#2d4a6a", self.show_decrypt_screen))
         
-        operations.extend([
-            ("📊", "AUDIT LOGS", "Review system activity logs",
-             "#6a4a2d", "#4a2d1a", self.show_audit_logs),
-            ("🔑", "TOTP GENERATOR", "Generate 2FA authentication codes",
-             "#6a2d6a", "#4a1a4a", self.show_totp_generator)
-        ])
+        # Only show audit logs for Commander
+        if self.logged_in_user['role'] == "Commander":
+            operations.append(("📊", "AUDIT LOGS", "Review system activity logs",
+                             "#6a4a2d", "#4a2d1a", self.show_audit_logs))
+        
+        operations.append(("🔑", "TOTP GENERATOR", "Generate 2FA authentication codes",
+                         "#6a2d6a", "#4a1a4a", self.show_totp_generator))
         
         for icon, title, desc, fg, hover, cmd in operations:
             btn_container = ctk.CTkFrame(ops_scroll, fg_color="#2a2a2a", corner_radius=12)
@@ -885,7 +883,6 @@ class MilitaryDataLockerGUI:
                           fg_color=fg, hover_color=hover,
                           corner_radius=10).pack(side="right", padx=18, pady=12)
         
-        # Right panel
         right_panel = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=15)
         right_panel.pack(side="right", fill="both", expand=True, padx=(12, 0))
         
@@ -898,7 +895,6 @@ class MilitaryDataLockerGUI:
         info_scroll = ctk.CTkScrollableFrame(right_panel, fg_color="transparent")
         info_scroll.pack(fill="both", expand=True, padx=18, pady=(0,18))
         
-        # Permissions
         perm_box = ctk.CTkFrame(info_scroll, fg_color="#2a2a2a", corner_radius=12)
         perm_box.pack(fill="x", pady=12)
         
@@ -920,7 +916,6 @@ class MilitaryDataLockerGUI:
         
         perm_box.pack_configure(pady=(0,12))
         
-        # Storage stats
         sys_box = ctk.CTkFrame(info_scroll, fg_color="#2a2a2a", corner_radius=12)
         sys_box.pack(fill="x", pady=12)
         
@@ -949,7 +944,6 @@ class MilitaryDataLockerGUI:
             ctk.CTkLabel(stat_item, text=str(value), 
                         font=("Arial", 18, "bold")).pack(side="right", padx=12, pady=10)
         
-        # Security status
         security_box = ctk.CTkFrame(info_scroll, fg_color="#1a472a", corner_radius=12)
         security_box.pack(fill="x", pady=12)
         
@@ -958,7 +952,6 @@ class MilitaryDataLockerGUI:
         ctk.CTkLabel(security_box, text="All systems operational", 
                     font=("Arial", 11)).pack(pady=(0,12))
         
-        # Logout
         SmoothButton(main_container, text="🚪 TERMINATE SESSION", 
                       command=self.logout,
                       width=280, height=55, font=("Arial", 16, "bold"),
@@ -968,11 +961,7 @@ class MilitaryDataLockerGUI:
     def show_encrypt_screen(self):
         encrypt_window = ctk.CTkToplevel(self.window)
         encrypt_window.title("📝 Create & Encrypt Mission File")
-        
-        # Get screen dimensions and set window size to 85% of screen height
-        screen_height = encrypt_window.winfo_screenheight()
-        window_height = int(screen_height * 0.85)
-        encrypt_window.geometry(f"850x{window_height}")
+        encrypt_window.geometry("850x750")
         encrypt_window.grab_set()
         
         animate_fade_in(encrypt_window)
@@ -983,66 +972,58 @@ class MilitaryDataLockerGUI:
         header.pack(fill="x", side="top")
         
         ctk.CTkLabel(header, text="📝 CREATE & ENCRYPT MISSION FILE", 
-                    font=("Arial Black", 22, "bold"),
-                    text_color="#00ff00").pack(pady=20)
+                    font=("Arial Black", 24, "bold"),
+                    text_color="#00ff00").pack(pady=25)
         
         ctk.CTkLabel(header, text="━━━ SECURE FILE GENERATION ━━━", 
-                    font=("Courier", 11), text_color="#00ff00").pack(pady=(0,15))
+                    font=("Courier", 12), text_color="#00ff00").pack(pady=(0,20))
         
-        # Scrollable content area
+        # FIXED: Make content scrollable
         scroll_content = ctk.CTkScrollableFrame(encrypt_window, fg_color="#2a2a2a")
         scroll_content.pack(fill="both", expand=True, padx=25, pady=(15,0))
         
-        # Filename
+        # Filename section
         file_frame = ctk.CTkFrame(scroll_content, fg_color="#1a1a1a", corner_radius=12)
-        file_frame.pack(fill="x", pady=10)
+        file_frame.pack(fill="x", pady=12)
         
         ctk.CTkLabel(file_frame, text="📄 FILENAME:", 
-                    font=("Arial", 13, "bold")).pack(anchor="w", padx=18, pady=(12,5))
+                    font=("Arial", 14, "bold")).pack(anchor="w", padx=18, pady=(15,5))
         filename_entry = ctk.CTkEntry(file_frame, placeholder_text="mission_report.txt",
-                                     font=("Arial", 13), border_width=0,
-                                     fg_color="#2a2a2a", height=40)
-        filename_entry.pack(fill="x", padx=18, pady=(0,12))
+                                     font=("Arial", 14), border_width=0,
+                                     fg_color="#2a2a2a", height=42)
+        filename_entry.pack(fill="x", padx=18, pady=(0,15))
         filename_entry.insert(0, "mission_file.txt")
         
-        # Content
+        # Content section
         content_frame = ctk.CTkFrame(scroll_content, fg_color="#1a1a1a", corner_radius=12)
-        content_frame.pack(fill="x", pady=10)
+        content_frame.pack(fill="x", pady=12)
         
         ctk.CTkLabel(content_frame, text="📋 MISSION CONTENT:", 
-                    font=("Arial", 13, "bold")).pack(anchor="w", padx=18, pady=(12,5))
+                    font=("Arial", 14, "bold")).pack(anchor="w", padx=18, pady=(15,5))
         
-        content_text = ctk.CTkTextbox(content_frame, font=("Consolas", 12),
-                                     border_width=0, fg_color="#2a2a2a",
-                                     wrap="word", height=250, 
-                                     text_color="#00ff00",
-                                     state="normal")
-        content_text.pack(fill="x", padx=18, pady=(0,12))
+        # FIXED: Added text_color="#00ff00" for green text
+        content_text = ctk.CTkTextbox(content_frame, font=("Consolas", 13),
+                                     border_width=0, fg_color="#2a2a2a", wrap="word",
+                                     height=250, text_color="#00ff00")
+        content_text.pack(fill="x", padx=18, pady=(0,15))
         
-        # Password
+        # Password section
         pass_frame = ctk.CTkFrame(scroll_content, fg_color="#1a1a1a", corner_radius=12)
-        pass_frame.pack(fill="x", pady=10)
+        pass_frame.pack(fill="x", pady=12)
         
         ctk.CTkLabel(pass_frame, text="🔒 ENCRYPTION PASSWORD:", 
-                    font=("Arial", 13, "bold")).pack(anchor="w", padx=18, pady=(12,5))
+                    font=("Arial", 14, "bold")).pack(anchor="w", padx=18, pady=(15,5))
         password_entry = ctk.CTkEntry(pass_frame, placeholder_text="Strong password",
-                                     show="●", font=("Arial", 13), border_width=0,
-                                     fg_color="#2a2a2a", height=40)
-        password_entry.pack(fill="x", padx=18, pady=(0,12))
-        
-        # Info box
-        info_frame = ctk.CTkFrame(scroll_content, fg_color="#1a472a", corner_radius=12)
-        info_frame.pack(fill="x", pady=10)
-        
-        ctk.CTkLabel(info_frame, text="ℹ️ Enter your mission data and choose a strong password", 
-                    font=("Arial", 11), wraplength=750).pack(pady=12, padx=18)
+                                     show="●", font=("Arial", 14), border_width=0,
+                                     fg_color="#2a2a2a", height=42)
+        password_entry.pack(fill="x", padx=18, pady=(0,15))
         
         def perform_encrypt():
             filename = filename_entry.get().strip()
-            content_val = content_text.get("0.0", "end-1c").strip()  # Use 0.0 and strip whitespace
+            content_data = content_text.get("1.0", "end-1c")
             password = password_entry.get()
             
-            if not filename or not content_val or not password:
+            if not filename or not content_data or not password:
                 messagebox.showerror("❌ Error", "All fields are required!")
                 return
             
@@ -1051,10 +1032,12 @@ class MilitaryDataLockerGUI:
             
             try:
                 filepath = f"mission_files/{filename}"
-                with open(filepath, "w", encoding='utf-8') as f:
-                    f.write(content_val)
+                with open(filepath, "w") as f:
+                    f.write(content_data)
                 
-                key = derive_key(password)
+                # Get user's salt
+                salt = base64.b64decode(self.logged_in_user['salt'])
+                key = derive_key(password, salt=salt)
                 success, result = encrypt_file(filepath, key, self.logged_in_user['username'])
                 
                 loading.close()
@@ -1071,61 +1054,54 @@ class MilitaryDataLockerGUI:
         
         # Buttons - Fixed at bottom
         btn_frame = ctk.CTkFrame(encrypt_window, fg_color="#2a2a2a")
-        btn_frame.pack(fill="x", side="bottom", padx=25, pady=20)
+        btn_frame.pack(fill="x", side="bottom", padx=25, pady=(0,25))
         
         SmoothButton(btn_frame, text="🔒 ENCRYPT NOW", 
                       command=perform_encrypt,
-                      width=220, height=50, font=("Arial", 14, "bold"),
+                      width=220, height=55, font=("Arial", 15, "bold"),
                       fg_color="#2d6a3e", hover_color="#1a472a",
-                      corner_radius=12).pack(side="left", padx=10, pady=12)
+                      corner_radius=12).pack(side="left", padx=12, pady=18)
         
         SmoothButton(btn_frame, text="⬅️ BACK", 
                       command=encrypt_window.destroy,
-                      width=170, height=50, font=("Arial", 14, "bold"),
+                      width=170, height=55, font=("Arial", 15, "bold"),
                       fg_color="#4a4a4a", hover_color="#2d2d2d",
-                      corner_radius=12).pack(side="right", padx=10, pady=12)
+                      corner_radius=12).pack(side="right", padx=12, pady=18)
     
     def show_decrypt_screen(self):
         decrypt_window = ctk.CTkToplevel(self.window)
         decrypt_window.title("🔓 Decrypt File")
-        
-        # Get screen dimensions
-        screen_height = decrypt_window.winfo_screenheight()
-        window_height = int(screen_height * 0.85)
-        decrypt_window.geometry(f"850x{window_height}")
+        decrypt_window.geometry("850x450")
         decrypt_window.grab_set()
         
         animate_fade_in(decrypt_window)
         animate_slide_in(decrypt_window, 'down', 30)
         
-        # Header - Fixed at top
         header = ctk.CTkFrame(decrypt_window, fg_color="#1a472a", corner_radius=0)
-        header.pack(fill="x", side="top")
+        header.pack(fill="x")
         
         ctk.CTkLabel(header, text="🔓 DECRYPT MISSION FILE", 
-                    font=("Arial Black", 22, "bold"),
-                    text_color="#00ff00").pack(pady=20)
+                    font=("Arial Black", 24, "bold"),
+                    text_color="#00ff00").pack(pady=25)
         
         ctk.CTkLabel(header, text="━━━ SECURE FILE ACCESS ━━━", 
-                    font=("Courier", 11), text_color="#00ff00").pack(pady=(0,15))
+                    font=("Courier", 12), text_color="#00ff00").pack(pady=(0,20))
         
-        # Scrollable content
-        scroll_content = ctk.CTkScrollableFrame(decrypt_window, fg_color="#2a2a2a")
-        scroll_content.pack(fill="both", expand=True, padx=25, pady=(15,0))
+        content = ctk.CTkFrame(decrypt_window, fg_color="#2a2a2a")
+        content.pack(fill="both", expand=True, padx=25, pady=25)
         
-        # File selection
-        file_frame = ctk.CTkFrame(scroll_content, fg_color="#1a1a1a", corner_radius=12)
-        file_frame.pack(fill="x", pady=10)
+        file_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
+        file_frame.pack(fill="x", pady=12)
         
         ctk.CTkLabel(file_frame, text="📂 SELECT ENCRYPTED FILE:", 
-                    font=("Arial", 13, "bold")).pack(anchor="w", padx=18, pady=(12,5))
+                    font=("Arial", 14, "bold")).pack(anchor="w", padx=18, pady=(15,5))
         
         select_frame = ctk.CTkFrame(file_frame, fg_color="transparent")
-        select_frame.pack(fill="x", padx=18, pady=(0,12))
+        select_frame.pack(fill="x", padx=18, pady=(0,15))
         
         file_entry = ctk.CTkEntry(select_frame, placeholder_text="No file selected",
                                  font=("Arial", 13), border_width=0,
-                                 fg_color="#2a2a2a", height=40)
+                                 fg_color="#2a2a2a", height=42)
         file_entry.pack(side="left", fill="x", expand=True, padx=(0,12))
         
         def browse_file():
@@ -1144,12 +1120,11 @@ class MilitaryDataLockerGUI:
             select_window.grab_set()
             
             animate_fade_in(select_window)
-            animate_slide_in(select_window, 'down', 20)
             
-            header_sel = ctk.CTkFrame(select_window, fg_color="#1a472a")
-            header_sel.pack(fill="x")
+            header_select = ctk.CTkFrame(select_window, fg_color="#1a472a")
+            header_select.pack(fill="x")
             
-            ctk.CTkLabel(header_sel, text="📂 SELECT FILE TO DECRYPT", 
+            ctk.CTkLabel(header_select, text="📂 SELECT FILE TO DECRYPT", 
                         font=("Arial", 20, "bold")).pack(pady=18)
             
             listbox_frame = ctk.CTkScrollableFrame(select_window, fg_color="#2a2a2a")
@@ -1161,8 +1136,7 @@ class MilitaryDataLockerGUI:
                 file_item = ctk.CTkFrame(listbox_frame, fg_color="#1a1a1a", corner_radius=10)
                 file_item.pack(fill="x", pady=6, padx=12)
                 
-                radio = ctk.CTkRadioButton(file_item, text="", variable=selected_file, 
-                                          value=file)
+                radio = ctk.CTkRadioButton(file_item, text="", variable=selected_file, value=file)
                 radio.pack(side="left", padx=12, pady=12)
                 
                 ctk.CTkLabel(file_item, text=file, font=("Consolas", 12), 
@@ -1184,27 +1158,19 @@ class MilitaryDataLockerGUI:
         
         SmoothButton(select_frame, text="📁 BROWSE",
                       command=browse_file,
-                      width=130, height=40, font=("Arial", 13, "bold"),
+                      width=130, height=42, font=("Arial", 13, "bold"),
                       fg_color="#4a6a8a", hover_color="#2d4a6a",
                       corner_radius=10).pack(side="left")
         
-        # Password
-        pass_frame = ctk.CTkFrame(scroll_content, fg_color="#1a1a1a", corner_radius=12)
-        pass_frame.pack(fill="x", pady=10)
+        pass_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
+        pass_frame.pack(fill="x", pady=12)
         
         ctk.CTkLabel(pass_frame, text="🔒 DECRYPTION PASSWORD:", 
-                    font=("Arial", 13, "bold")).pack(anchor="w", padx=18, pady=(12,5))
+                    font=("Arial", 14, "bold")).pack(anchor="w", padx=18, pady=(15,5))
         password_entry = ctk.CTkEntry(pass_frame, placeholder_text="Enter password",
-                                     show="●", font=("Arial", 13), border_width=0,
-                                     fg_color="#2a2a2a", height=40)
-        password_entry.pack(fill="x", padx=18, pady=(0,12))
-        
-        # Info message
-        info_frame = ctk.CTkFrame(scroll_content, fg_color="#1a472a", corner_radius=12)
-        info_frame.pack(fill="x", pady=10)
-        
-        ctk.CTkLabel(info_frame, text="ℹ️ After decryption, content will be displayed in a new window", 
-                    font=("Arial", 11), wraplength=750).pack(pady=12, padx=18)
+                                     show="●", font=("Arial", 14), border_width=0,
+                                     fg_color="#2a2a2a", height=42)
+        password_entry.pack(fill="x", padx=18, pady=(0,15))
         
         def perform_decrypt():
             filename = file_entry.get().strip()
@@ -1224,123 +1190,84 @@ class MilitaryDataLockerGUI:
                     messagebox.showerror("❌ Error", f"File not found: {filename}")
                     return
                 
-                key = derive_key(password)
-                success, result, data = decrypt_file(encrypted_path, key, 
-                                                    self.logged_in_user['username'])
+                # Get user's salt
+                salt = base64.b64decode(self.logged_in_user['salt'])
+                key = derive_key(password, salt=salt)
+                success, result, data = decrypt_file(encrypted_path, key, self.logged_in_user['username'])
                 
                 loading.close()
                 
-                if success and data:
-                    # Decode the data
-                    decoded_text = data.decode('utf-8', errors='ignore')
-                    
-                    # Close the decrypt window
-                    decrypt_window.destroy()
-                    
-                    # Create NEW window to show decrypted content
-                    content_window = ctk.CTkToplevel(self.window)
-                    content_window.title("📄 Decrypted File Content")
-                    
-                    screen_height = content_window.winfo_screenheight()
-                    window_height = int(screen_height * 0.85)
-                    content_window.geometry(f"900x{window_height}")
+                if success:
+                    # Open new window to display decrypted content
+                    content_window = ctk.CTkToplevel(decrypt_window)
+                    content_window.title("📄 Decrypted Content")
+                    content_window.geometry("900x700")
                     content_window.grab_set()
                     
                     animate_fade_in(content_window)
-                    animate_slide_in(content_window, 'down', 30)
                     
                     # Header
-                    header = ctk.CTkFrame(content_window, fg_color="#1a472a", corner_radius=0)
-                    header.pack(fill="x", side="top")
+                    content_header = ctk.CTkFrame(content_window, fg_color="#1a472a", corner_radius=0)
+                    content_header.pack(fill="x")
                     
-                    ctk.CTkLabel(header, text="📄 DECRYPTED FILE CONTENT", 
+                    ctk.CTkLabel(content_header, text="📄 DECRYPTED FILE CONTENT", 
                                 font=("Arial Black", 22, "bold"),
                                 text_color="#00ff00").pack(pady=20)
                     
-                    ctk.CTkLabel(header, text=f"━━━ {filename} ━━━", 
-                                font=("Courier", 12), text_color="#00ff00").pack(pady=(0,15))
+                    ctk.CTkLabel(content_header, text=f"━━━ {result} ━━━", 
+                                font=("Courier", 11), text_color="#00ff00").pack(pady=(0,15))
                     
-                    # Info bar
-                    info_bar = ctk.CTkFrame(content_window, fg_color="#2a2a2a")
-                    info_bar.pack(fill="x", padx=25, pady=(15,0))
+                    # Content frame
+                    content_container = ctk.CTkFrame(content_window, fg_color="#2a2a2a")
+                    content_container.pack(fill="both", expand=True, padx=25, pady=20)
                     
-                    ctk.CTkLabel(info_bar, text=f"📊 Size: {len(decoded_text)} characters  |  💾 Saved as: {result}", 
-                                font=("Arial", 11)).pack(pady=10)
+                    # Textbox for content
+                    content_text = ctk.CTkTextbox(content_container, font=("Consolas", 12),
+                                                  border_width=0, fg_color="#1a1a1a", wrap="word")
+                    content_text.pack(fill="both", expand=True, padx=15, pady=15)
                     
-                    # Content display with scrollbar
-                    content_frame = ctk.CTkFrame(content_window, fg_color="#1a1a1a", corner_radius=12)
-                    content_frame.pack(fill="both", expand=True, padx=25, pady=15)
+                    # Insert decrypted content
+                    content_text.insert("1.0", data.decode('utf-8', errors='ignore'))
                     
-                    # Textbox with content
-                    content_display = ctk.CTkTextbox(content_frame, 
-                                                    font=("Consolas", 13),
-                                                    border_width=2, 
-                                                    border_color="#00ff00",
-                                                    fg_color="#0a0a0a",
-                                                    wrap="word",
-                                                    text_color="#00ff00",
-                                                    state="normal")
-                    content_display.pack(fill="both", expand=True, padx=15, pady=15)
-                    
-                    # Insert content
-                    content_display.insert("1.0", decoded_text)
-                    content_display.see("1.0")
-                    
-                    # Buttons at bottom
-                    btn_frame = ctk.CTkFrame(content_window, fg_color="#2a2a2a")
-                    btn_frame.pack(fill="x", side="bottom", padx=25, pady=20)
-                    
-                    def copy_content():
-                        content_window.clipboard_clear()
-                        content_window.clipboard_append(decoded_text)
-                        messagebox.showinfo("✅ Copied", "Content copied to clipboard!")
-                    
-                    SmoothButton(btn_frame, text="📋 COPY TO CLIPBOARD", 
-                                command=copy_content,
-                                width=220, height=50, font=("Arial", 14, "bold"),
-                                fg_color="#2d6a3e", hover_color="#1a472a",
-                                corner_radius=12).pack(side="left", padx=10, pady=12)
-                    
-                    SmoothButton(btn_frame, text="⬅️ BACK TO DASHBOARD", 
+                    # Close button
+                    SmoothButton(content_window, text="✅ CLOSE", 
                                 command=content_window.destroy,
-                                width=220, height=50, font=("Arial", 14, "bold"),
-                                fg_color="#4a4a4a", hover_color="#2d2d2d",
-                                corner_radius=12).pack(side="right", padx=10, pady=12)
+                                width=200, height=50, font=("Arial", 14, "bold"),
+                                fg_color="#4a6a8a", hover_color="#2d4a6a",
+                                corner_radius=12).pack(pady=20)
                     
+                    messagebox.showinfo("✅ Success", 
+                                      f"File decrypted successfully!\n\nSaved as: {result}")
                 else:
-                    messagebox.showerror("❌ Error", f"Decryption failed:\n{result if not success else 'No data returned'}")
+                    messagebox.showerror("❌ Error", f"Decryption failed:\n{result}")
             except Exception as e:
                 loading.close()
-                import traceback
-                traceback.print_exc()
                 messagebox.showerror("❌ Error", f"Error: {str(e)}")
         
-        # Buttons - Fixed at bottom
         btn_frame = ctk.CTkFrame(decrypt_window, fg_color="#2a2a2a")
-        btn_frame.pack(fill="x", side="bottom", padx=25, pady=20)
+        btn_frame.pack(fill="x", padx=25, pady=(0,25))
         
-        SmoothButton(btn_frame, text="🔓 DECRYPT NOW", 
+        SmoothButton(btn_frame, text="🔓 DECRYPT FILE", 
                       command=perform_decrypt,
-                      width=220, height=50, font=("Arial", 14, "bold"),
+                      width=220, height=55, font=("Arial", 15, "bold"),
                       fg_color="#4a6a8a", hover_color="#2d4a6a",
-                      corner_radius=12).pack(side="left", padx=10, pady=12)
+                      corner_radius=12).pack(side="left", padx=12, pady=18)
         
         SmoothButton(btn_frame, text="⬅️ BACK", 
                       command=decrypt_window.destroy,
-                      width=170, height=50, font=("Arial", 14, "bold"),
+                      width=170, height=55, font=("Arial", 15, "bold"),
                       fg_color="#4a4a4a", hover_color="#2d2d2d",
-                      corner_radius=12).pack(side="right", padx=10, pady=12)
+                      corner_radius=12).pack(side="right", padx=12, pady=18)
     
     def show_audit_logs(self):
         log_window = ctk.CTkToplevel(self.window)
-        log_window.title("📊 Audit Logs")
+        log_window.title("📊 Audit Logs - Commander Access Only")
         log_window.geometry("1100x750")
         log_window.grab_set()
         
         animate_fade_in(log_window)
         animate_slide_in(log_window, 'down', 30)
         
-        # Header
         header = ctk.CTkFrame(log_window, fg_color="#1a472a", corner_radius=0)
         header.pack(fill="x")
         
@@ -1348,10 +1275,9 @@ class MilitaryDataLockerGUI:
                     font=("Arial Black", 24, "bold"),
                     text_color="#00ff00").pack(pady=25)
         
-        ctk.CTkLabel(header, text="━━━ SECURITY ACTIVITY MONITOR ━━━", 
+        ctk.CTkLabel(header, text="━━━ SECURITY ACTIVITY MONITOR (COMMANDER ONLY) ━━━", 
                     font=("Courier", 12), text_color="#00ff00").pack(pady=(0,20))
         
-        # Log display
         log_frame = ctk.CTkScrollableFrame(log_window, fg_color="#2a2a2a")
         log_frame.pack(fill="both", expand=True, padx=25, pady=25)
         
@@ -1371,22 +1297,18 @@ class MilitaryDataLockerGUI:
                         status_color = "#00ff00" if log_data["success"] else "#ff6b6b"
                         status_icon = "✅" if log_data["success"] else "❌"
                         
-                        # Time
                         time_str = log_data['timestamp'][:19].replace('T', ' ')
                         ctk.CTkLabel(log_entry_frame, text=time_str, 
                                     font=("Consolas", 11), width=160,
                                     anchor="w").pack(side="left", padx=12, pady=12)
                         
-                        # Status
                         ctk.CTkLabel(log_entry_frame, text=status_icon, 
                                     font=("Arial", 16), width=35).pack(side="left", padx=6, pady=12)
                         
-                        # User
                         ctk.CTkLabel(log_entry_frame, text=log_data['username'], 
                                     font=("Consolas", 12, "bold"), width=130,
                                     anchor="w").pack(side="left", padx=6, pady=12)
                         
-                        # Action
                         action_label = ctk.CTkLabel(log_entry_frame, 
                                                    text=log_data['action'].upper(), 
                                                    font=("Consolas", 12, "bold"),
@@ -1394,7 +1316,6 @@ class MilitaryDataLockerGUI:
                                                    width=110)
                         action_label.pack(side="left", padx=12, pady=12)
                         
-                        # Filename
                         filename = log_data['filename']
                         if len(filename) > 50:
                             filename = "..." + filename[-47:]
@@ -1412,7 +1333,6 @@ class MilitaryDataLockerGUI:
             ctk.CTkLabel(log_frame, text=f"❌ Error loading logs: {str(e)}", 
                         font=("Arial", 15)).pack(pady=80)
         
-        # Back button
         SmoothButton(log_window, text="⬅️ BACK TO DASHBOARD", 
                       command=log_window.destroy,
                       width=280, height=55, font=("Arial", 16, "bold"),
@@ -1420,18 +1340,16 @@ class MilitaryDataLockerGUI:
                       corner_radius=12).pack(pady=25)
     
     def show_pre_login_totp_generator(self):
-        
-        # TOTP generator for pre-login - Compact size
-
+        """Pre-login TOTP generator with fully visible code"""
         totp_window = ctk.CTkToplevel(self.window)
         totp_window.title("🔑 TOTP Code Generator")
-        totp_window.geometry("600x700")
+        totp_window.geometry("620x630")
         totp_window.resizable(False, False)
         totp_window.grab_set()
         
         totp_window.update_idletasks()
-        x = (totp_window.winfo_screenwidth() // 2) - 300
-        y = (totp_window.winfo_screenheight() // 2) - 350
+        x = (totp_window.winfo_screenwidth() // 2) - 310
+        y = (totp_window.winfo_screenheight() // 2) - 315
         totp_window.geometry(f"+{x}+{y}")
         
         animate_fade_in(totp_window)
@@ -1442,21 +1360,22 @@ class MilitaryDataLockerGUI:
         header.pack(fill="x")
         
         ctk.CTkLabel(header, text="🔑 GENERATE 2FA CODE", 
-                    font=("Arial Black", 22, "bold"),
-                    text_color="#00ff00").pack(pady=20)
+                    font=("Arial Black", 20, "bold"),
+                    text_color="#00ff00").pack(pady=18)
         
         ctk.CTkLabel(header, text="━━━ ENTER YOUR TOTP SECRET ━━━", 
                     font=("Courier", 11), text_color="#00ff00").pack(pady=(0,15))
         
+        # Content
         content = ctk.CTkFrame(totp_window, fg_color="#2a2a2a")
         content.pack(fill="both", expand=True, padx=25, pady=20)
         
-        # Info message
+        # Info
         info_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
         info_frame.pack(fill="x", pady=10)
         
         ctk.CTkLabel(info_frame, text="ℹ️ Enter the TOTP secret from registration", 
-                    font=("Arial", 11), wraplength=500).pack(pady=12, padx=18)
+                    font=("Arial", 11), wraplength=500).pack(pady=12, padx=15)
         
         # Secret input
         secret_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
@@ -1470,7 +1389,36 @@ class MilitaryDataLockerGUI:
                                    border_width=0, height=45, placeholder_text="Enter your secret key")
         secret_entry.pack(fill="x", padx=20, pady=(0,15))
         
-        # Generate button - MOVED HERE for better visibility
+        # Generate button
+        SmoothButton(content, text="🔑 GENERATE CODE", 
+                     command=lambda: start_generation(),
+                     width=280, height=50, font=("Arial", 15, "bold"),
+                     fg_color="#2d6a3e", hover_color="#1a472a",
+                     corner_radius=12).pack(pady=12)
+        
+        # Code display frame
+        code_frame = ctk.CTkFrame(content, fg_color="#1a472a", corner_radius=15)
+        code_frame.pack(fill="x", pady=12, padx=10)
+        
+        ctk.CTkLabel(code_frame, text="CURRENT LOGIN CODE", 
+                    font=("Arial", 14, "bold")).pack(pady=(20,10))
+        
+        code_display = SelectableCodeDisplay(code_frame, code_text="------",
+                                             font=("Arial", 48, "bold"), height=70)
+        code_display.pack(pady=(5,20), padx=25, fill="x")
+        
+        # Timer
+        timer_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
+        timer_frame.pack(fill="x", pady=10, padx=10)
+        
+        timer_label = ctk.CTkLabel(timer_frame, text="Click 'Generate Code' to start", 
+                                  font=("Arial", 12))
+        timer_label.pack(pady=(12,8))
+        
+        progress = ctk.CTkProgressBar(timer_frame, width=520)
+        progress.pack(pady=(0,12), padx=15)
+        progress.set(0)
+        
         is_generating = {"active": False}
         
         def update_code():
@@ -1491,7 +1439,7 @@ class MilitaryDataLockerGUI:
                 timer_label.configure(text=f"Time remaining: {remaining}s")
                 
                 totp_window.after(1000, update_code)
-            except Exception as e:
+            except Exception:
                 code_display.update_code("ERROR")
                 timer_label.configure(text="Invalid secret key")
                 is_generating["active"] = False
@@ -1506,67 +1454,29 @@ class MilitaryDataLockerGUI:
             timer_label.configure(text="Generating codes...")
             update_code()
         
-        SmoothButton(content, text="🔑 GENERATE CODE", 
-                     command=start_generation,
-                     width=300, height=50, font=("Arial", 15, "bold"),
-                     fg_color="#2d6a3e", hover_color="#1a472a",
-                     corner_radius=12).pack(pady=15)
-        
-        # Code display
-        code_frame = ctk.CTkFrame(content, fg_color="#1a472a", corner_radius=15)
-        code_frame.pack(fill="x", pady=15, padx=15)
-        
-        ctk.CTkLabel(code_frame, text="CURRENT LOGIN CODE", 
-                    font=("Arial", 13, "bold")).pack(pady=(18,8))
-        
-        code_display = SelectableCodeDisplay(code_frame, code_text="------",
-                                             font=("Arial", 42, "bold"), 
-                                             height=65,
-                                             text_color="#00ff00")
-        code_display.pack(pady=(5,18), padx=20, fill="x")
-        
-        # Timer bar
-        timer_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
-        timer_frame.pack(fill="x", pady=10, padx=15)
-        
-        timer_label = ctk.CTkLabel(timer_frame, text="Enter secret and click 'Generate Code'", 
-                                  font=("Arial", 11))
-        timer_label.pack(pady=(12,8))
-        
-        progress = ctk.CTkProgressBar(timer_frame, width=500)
-        progress.pack(pady=(0,12), padx=20)
-        progress.set(0)
-        
-        # Close button
-        def close_window():
-            is_generating["active"] = False
-            totp_window.destroy()
-        
+        # Back button
         SmoothButton(totp_window, text="⬅️ BACK TO LOGIN", 
-                      command=close_window,
-                      width=250, height=45, font=("Arial", 13, "bold"),
+                      command=lambda: [setattr(is_generating, "active", False), totp_window.destroy()],
+                      width=240, height=45, font=("Arial", 13, "bold"),
                       fg_color="#4a4a4a", hover_color="#2d2d2d",
-                      corner_radius=12).pack(pady=(0,20))
+                      corner_radius=12).pack(pady=15)
     
     def show_totp_generator(self):
-        
-        # Post-login TOTP generator
-
+        """Post-login TOTP generator with fully visible code"""
         totp_window = ctk.CTkToplevel(self.window)
         totp_window.title("🔑 TOTP Generator")
-        totp_window.geometry("600x550")
+        totp_window.geometry("620x560")
         totp_window.resizable(False, False)
         totp_window.grab_set()
         
         totp_window.update_idletasks()
-        x = (totp_window.winfo_screenwidth() // 2) - 300
-        y = (totp_window.winfo_screenheight() // 2) - 275
+        x = (totp_window.winfo_screenwidth() // 2) - 310
+        y = (totp_window.winfo_screenheight() // 2) - 280
         totp_window.geometry(f"+{x}+{y}")
         
         animate_fade_in(totp_window)
         animate_slide_in(totp_window, 'down', 30)
         
-        # Header
         header = ctk.CTkFrame(totp_window, fg_color="#1a472a", corner_radius=0)
         header.pack(fill="x")
         
@@ -1580,30 +1490,28 @@ class MilitaryDataLockerGUI:
         content = ctk.CTkFrame(totp_window, fg_color="#2a2a2a")
         content.pack(fill="both", expand=True, padx=25, pady=25)
         
-        # Secret display
         secret_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
         secret_frame.pack(fill="x", pady=18)
         
-        ctk.CTkLabel(secret_frame, text="🔐 YOUR TOTP SECRET:", 
+        ctk.CTkLabel(secret_frame, text="🔐 YOUR TOTP SECRET (Right-click to copy):", 
                     font=("Arial", 14, "bold")).pack(pady=(18,8))
         
         secret_display = SelectableCodeDisplay(secret_frame, 
-                                               code_text=self.logged_in_user['totp_secret'],
-                                               font=("Courier", 14, "bold"), height=50)
+                                              code_text=self.logged_in_user['totp_secret'],
+                                              font=("Courier", 16, "bold"), height=50)
         secret_display.pack(fill="x", padx=25, pady=(0,18))
         
-        # Code display
+        # Code display frame
         code_frame = ctk.CTkFrame(content, fg_color="#1a472a", corner_radius=15)
-        code_frame.pack(fill="x", pady=25, padx=25)
+        code_frame.pack(fill="x", pady=25, padx=20)
         
         ctk.CTkLabel(code_frame, text="CURRENT LOGIN CODE", 
-                    font=("Arial", 13)).pack(pady=(25,8))
+                    font=("Arial", 14)).pack(pady=(25,10))
         
         code_display = SelectableCodeDisplay(code_frame, code_text="",
                                              font=("Arial", 48, "bold"), height=70)
-        code_display.pack(pady=(8,25), padx=20, fill="x")
+        code_display.pack(pady=(8,25), padx=25, fill="x")
         
-        # Timer bar
         timer_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
         timer_frame.pack(fill="x", pady=12)
         
@@ -1611,7 +1519,7 @@ class MilitaryDataLockerGUI:
                                   font=("Arial", 12))
         timer_label.pack(pady=(12,8))
         
-        progress = ctk.CTkProgressBar(timer_frame, width=450)
+        progress = ctk.CTkProgressBar(timer_frame, width=500)
         progress.pack(pady=(0,12))
         
         def update_code():
@@ -1630,14 +1538,12 @@ class MilitaryDataLockerGUI:
         
         update_code()
         
-        # Info
         info_frame = ctk.CTkFrame(content, fg_color="#1a1a1a", corner_radius=12)
         info_frame.pack(fill="x", pady=12)
         
-        ctk.CTkLabel(info_frame, text="ℹ️ Code refreshes every 30 seconds | Select & copy with Ctrl+C", 
-                    font=("Arial", 11), text_color="gray").pack(pady=15)
+        ctk.CTkLabel(info_frame, text="ℹ️ Code refreshes every 30 seconds (Right-click to copy)", 
+                    font=("Arial", 12), text_color="gray").pack(pady=15)
         
-        # Back button
         SmoothButton(totp_window, text="⬅️ BACK TO DASHBOARD", 
                       command=totp_window.destroy,
                       width=280, height=55, font=("Arial", 16, "bold"),
